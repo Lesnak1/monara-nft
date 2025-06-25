@@ -2,8 +2,6 @@
 
 <div align="center">
 
-![MONARA Logo](https://via.placeholder.com/200x200/836EF9/FFFFFF?text=🧬+MONARA)
-
 [![Live Demo](https://img.shields.io/badge/🚀_Live_Demo-Visit_Now-836EF9?style=for-the-badge)](https://monara-nft.vercel.app)
 [![Smart Contract](https://img.shields.io/badge/📜_Contract-Monad_Testnet-00D4AA?style=for-the-badge)](https://testnet-explorer.monad.xyz/address/0xa7793FfC44680c03dC18ab0972b2a96A20d82335)
 [![License](https://img.shields.io/badge/📄_License-MIT-blue?style=for-the-badge)](LICENSE)
