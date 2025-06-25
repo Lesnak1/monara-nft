@@ -1,0 +1,27 @@
+{
+  "name": "MONARA - Neural Beings",
+  "short_name": "MONARA",
+  "description": "Evolving digital beings on Monad Network. Create, customize, and watch your neural NFTs evolve.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0F0F23",
+  "theme_color": "#836EF9",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "any",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ],
+  "categories": ["entertainment", "games", "lifestyle"],
+  "lang": "en",
+  "dir": "ltr",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "id": "monara-nft-app"
+} 
