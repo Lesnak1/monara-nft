@@ -1,0 +1,125 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Blockchain Development Cursor Rules
+
+Bu proje için Principal Blockchain Engineer ve Full-Stack dApp Architect perspektifiyle oluşturulmuş kapsamlı development rules koleksiyonu.
+
+## Rule Set Organization
+
+### 🏗️ [Blockchain & dApp Architecture](mdc:blockchain-architecture.mdc)
+- Temel prensipler ve planning approach
+- End-to-end type safety gereksinimleri
+- dApp mimari pattern'leri
+- NFT design excellence standartları
+- Project structure ve documentation
+
+### ⚡ [Solidity & Smart Contract Development](mdc:solidity-smart-contracts.mdc)
+- Function visibility ve NatSpec documentation
+- Security best practices (custom errors, access control)
+- Gas optimization techniques
+- Foundry testing workflows
+- Library usage ve OpenZeppelin integration
+
+### 🎨 [Next.js Frontend Development](mdc:nextjs-frontend-development.mdc)
+- React component design patterns
+- TypeScript best practices
+- TailwindCSS styling guidelines
+- Accessibility (a11y) requirements
+- State management strategies
+
+### 🔒 [Security & Best Practices](mdc:security-best-practices.mdc)
+- Smart contract security patterns
+- Frontend security considerations
+- Data validation ve sanitization
+- Environment security
+- Development environment security
+
+### 🧪 [Testing & Quality Control](mdc:testing-quality-control.mdc)
+- Comprehensive Foundry testing strategies
+- Frontend testing with React Testing Library
+- Property-based testing (fuzzing)
+- Quality control standards
+- CI/CD pipeline requirements
+
+## Core Development Principles
+
+### Plan First, Code Second
+Her task'a başlamadan önce:
+1. Step-by-step plan oluştur
+2. Smart contract ve frontend etkilerini consider et
+3. Pseudocode veya high-level architecture çiz
+4. Type safety implications'ları değerlendir
+
+### Full Implementation Standard
+- Hiçbir //TODO veya placeholder bırakma
+- Complete ve functional code delivery
+- End-to-end type safety ensure et
+- Comprehensive error handling implement et
+
+### Innovation & Excellence
+- Modern blockchain development patterns kullan
+- Best-in-class tooling tercih et (Foundry, Next.js 14+, TypeScript 5+)
+- Performance-first approach benimse
+- User experience'ı optimize et
+
+## Quick Reference Commands
+
+### Smart Contract Development
+```bash
+# Test running
+forge test -vvv
+forge test --gas-report
+forge coverage
+
+# Deployment
+forge script scripts/Deploy.s.sol --rpc-url $RPC_URL --broadcast
+
+# Verification
+forge verify-contract --chain-id 1 --watch $CONTRACT_ADDRESS src/MyNFT.sol:MyNFT
+```
+
+### Frontend Development
+```bash
+# Development
+npm run dev
+npm run build
+npm run start
+
+# Testing
+npm run test
+npm run test:watch
+npm run test:e2e
+
+# Quality checks
+npm run lint
+npm run type-check
+```
+
+## Project Standards Checklist
+
+### Before Development
+- [ ] Environment variables configured
+- [ ] TypeScript strict mode enabled
+- [ ] Foundry project initialized
+- [ ] Testing framework setup complete
+- [ ] Linting rules configured
+
+### During Development
+- [ ] Function-level documentation (NatSpec/JSDoc)
+- [ ] Type safety maintained
+- [ ] Error states handled
+- [ ] Loading states implemented
+- [ ] Accessibility considered
+
+### Before Deployment
+- [ ] Comprehensive test coverage
+- [ ] Security audit completed
+- [ ] Gas optimization verified
+- [ ] Frontend performance tested
+- [ ] Documentation updated
+
+Bu rule set'i blockchain development projelerinde code quality, security ve best practice adherence'ı ensure etmek için designed edilmiştir. Her rule category kendi dosyasında detaylı guidelines ve code example'ları içerir.
+

@@ -1,0 +1,353 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Next.js, TypeScript & TailwindCSS Frontend Rules
+
+## Component & Logic Design
+
+### DRY Principle
+Kendini tekrar etme. Reusable logic'i custom hook'lara ve shared component'lere abstract et:
+
+```typescript
+// hooks/useContract.ts
+import { useContractWrite, useContractRead } from 'wagmi';
+
+export const useNFTContract = () => {
+  const { data, write } = useContractWrite({
+    // Contract configuration
+  });
+  
+  return { mintNFT: write, transaction: data };
+};
+```
+
+### Readability & Simplicity
+Premature optimization yerine temiz, okunabilir kod'a odaklan. Descriptive variable ve function isimleri kullan:
+
+```typescript
+// ❌ Kötü
+const handleClick = (e: any) => {
+  const d = e.target.value;
+  setData(d);
+};
+
+// ✅ İyi
+const handleTokenIdChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const newTokenId = event.target.value;
+  setSelectedTokenId(newTokenId);
+};
+```
+
+### Early Returns
+Nesting'i azaltmak ve readability'yi artırmak için early return'leri kullan:
+
+```typescript
+const TokenCard = ({ token }: { token: NFTToken }) => {
+  if (!token) return null;
+  if (token.isLoading) return <LoadingSpinner />;
+  if (token.error) return <ErrorMessage error={token.error} />;
+  
+  return (
+    <div className="border rounded-lg p-4">
+      {/* Component content */}
+    </div>
+  );
+};
+```
+
+### Functional Components & Hooks
+Hook'lar ile function component'leri kullan:
+
+```typescript
+const NFTMinter = (): JSX.Element => {
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const { address, isConnected } = useAccount();
+  const { mintNFT } = useNFTContract();
+  
+  const handleMint = useCallback(async () => {
+    if (!isConnected) return;
+    setIsLoading(true);
+    try {
+      await mintNFT();
+    } finally {
+      setIsLoading(false);
+    }
+  }, [isConnected, mintNFT]);
+  
+  return (
+    <div className="max-w-md mx-auto p-6">
+      {/* Component JSX */}
+    </div>
+  );
+};
+
+export default NFTMinter;
+```
+
+### Event Handlers
+Event handler fonksiyonlarını "handle" prefix'i ile isimlendirin:
+
+```typescript
+const handleConnectWallet = () => { /* */ };
+const handleMintSubmit = () => { /* */ };
+const handleTokenSelect = () => { /* */ };
+const handleImageUpload = () => { /* */ };
+```
+
+### State Management
+- Basit/orta state için React'ın built-in hook'larını kullan (useState, useReducer, useContext)
+- Karmaşık global state için Zustand'ı consider et:
+
+```typescript
+// store/useAppStore.ts
+import { create } from 'zustand';
+
+interface AppState {
+  connectedWallet: string | null;
+  userNFTs: NFTToken[];
+  setConnectedWallet: (wallet: string | null) => void;
+  addUserNFT: (nft: NFTToken) => void;
+}
+
+export const useAppStore = create<AppState>((set) => ({
+  connectedWallet: null,
+  userNFTs: [],
+  setConnectedWallet: (wallet) => set({ connectedWallet: wallet }),
+  addUserNFT: (nft) => set((state) => ({ 
+    userNFTs: [...state.userNFTs, nft] 
+  })),
+}));
+```
+
+## Styling (TailwindCSS)
+
+### Tailwind Exclusively
+Styling için sadece TailwindCSS class'larını kullan. Ayrı .css dosyaları yazma veya inline style attribute'leri kullanma:
+
+```typescript
+// ✅ İyi
+const Card = ({ children }: { children: React.ReactNode }) => (
+  <div className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow duration-200">
+    {children}
+  </div>
+);
+
+// ❌ Kaçın
+const Card = ({ children }: { children: React.ReactNode }) => (
+  <div style={{ backgroundColor: 'white', padding: '24px' }}>
+    {children}
+  </div>
+);
+```
+
+### Conditional Classes
+Conditional class name'leri temiz şekilde handle etmek için clsx veya tailwind-merge library kullan:
+
+```typescript
+import { clsx } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+
+const cn = (...inputs: any[]) => twMerge(clsx(inputs));
+
+const Button = ({ variant, disabled, children }: ButtonProps) => (
+  <button
+    className={cn(
+      "px-4 py-2 rounded-md font-medium transition-colors",
+      {
+        "bg-blue-600 hover:bg-blue-700 text-white": variant === "primary",
+        "bg-gray-200 hover:bg-gray-300 text-gray-900": variant === "secondary",
+        "opacity-50 cursor-not-allowed": disabled,
+      }
+    )}
+    disabled={disabled}
+  >
+    {children}
+  </button>
+);
+```
+
+### Responsive Design Patterns
+Mobile-first approach ile responsive design implement et:
+
+```typescript
+const NFTGrid = ({ nfts }: { nfts: NFTToken[] }) => (
+  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 p-6">
+    {nfts.map((nft) => (
+      <NFTCard key={nft.id} nft={nft} />
+    ))}
+  </div>
+);
+```
+
+### Design System Components
+Consistent design için reusable component'ler oluştur:
+
+```typescript
+// components/ui/Button.tsx
+interface ButtonProps {
+  variant: 'primary' | 'secondary' | 'outline';
+  size: 'sm' | 'md' | 'lg';
+  children: React.ReactNode;
+  onClick?: () => void;
+  disabled?: boolean;
+}
+
+const Button = ({ variant, size, children, ...props }: ButtonProps) => {
+  return (
+    <button
+      className={cn(
+        "font-medium rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500",
+        {
+          "bg-blue-600 hover:bg-blue-700 text-white": variant === "primary",
+          "bg-gray-200 hover:bg-gray-300 text-gray-900": variant === "secondary",
+          "border border-gray-300 hover:bg-gray-50": variant === "outline",
+          "px-3 py-1.5 text-sm": size === "sm",
+          "px-4 py-2": size === "md",
+          "px-6 py-3 text-lg": size === "lg",
+        }
+      )}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+};
+```
+
+## Accessibility (a11y)
+
+### Semantic HTML
+Mümkün olduğunca semantic HTML element'leri kullan:
+
+```typescript
+const Navigation = () => (
+  <nav className="bg-white shadow-lg">
+    <main className="max-w-7xl mx-auto">
+      <section className="py-8">
+        <h1 className="text-3xl font-bold">NFT Collection</h1>
+        <button 
+          type="button"
+          aria-label="Connect your wallet"
+          className="bg-blue-600 text-white px-4 py-2 rounded-md"
+        >
+          Connect Wallet
+        </button>
+      </section>
+    </main>
+  </nav>
+);
+```
+
+### Accessible Elements
+Tüm interactive element'lerin accessible olmasını sağla:
+
+```typescript
+const ConnectWalletButton = () => {
+  const [isConnecting, setIsConnecting] = useState(false);
+  
+  const handleConnect = () => {
+    setIsConnecting(true);
+    // Connect logic
+  };
+  
+  const handleKeyDown = (event: React.KeyboardEvent) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      handleConnect();
+    }
+  };
+  
+  return (
+    <button
+      onClick={handleConnect}
+      onKeyDown={handleKeyDown}
+      aria-label={isConnecting ? "Connecting to wallet..." : "Connect your wallet"}
+      aria-disabled={isConnecting}
+      className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white px-4 py-2 rounded-md focus:ring-2 focus:ring-blue-500"
+      disabled={isConnecting}
+    >
+      {isConnecting ? "Connecting..." : "Connect Wallet"}
+    </button>
+  );
+};
+```
+
+## TypeScript Best Practices
+
+### Strict Type Definitions
+Contract interaction'ları için strict type'lar define et:
+
+```typescript
+// types/contracts.ts
+export interface NFTMetadata {
+  name: string;
+  description: string;
+  image: string;
+  attributes: Array<{
+    trait_type: string;
+    value: string | number;
+  }>;
+}
+
+export interface NFTToken {
+  id: bigint;
+  owner: string;
+  metadata: NFTMetadata;
+  tokenURI: string;
+}
+
+export interface MintParams {
+  to: string;
+  metadata: NFTMetadata;
+}
+```
+
+### Custom Hooks with Types
+Type-safe custom hook'lar oluştur:
+
+```typescript
+// hooks/useNFTCollection.ts
+interface UseNFTCollectionReturn {
+  nfts: NFTToken[];
+  isLoading: boolean;
+  error: string | null;
+  fetchNFTs: () => Promise<void>;
+  mintNFT: (params: MintParams) => Promise<void>;
+}
+
+export const useNFTCollection = (): UseNFTCollectionReturn => {
+  const [nfts, setNfts] = useState<NFTToken[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Implementation
+  
+  return {
+    nfts,
+    isLoading,
+    error,
+    fetchNFTs,
+    mintNFT,
+  };
+};
+```
+
+### Environment & Configuration Types
+Environment variable'ları için type safety:
+
+```typescript
+// lib/config.ts
+interface Config {
+  CONTRACT_ADDRESS: string;
+  CHAIN_ID: number;
+  ALCHEMY_API_KEY: string;
+}
+
+export const config: Config = {
+  CONTRACT_ADDRESS: process.env.NEXT_PUBLIC_CONTRACT_ADDRESS!,
+  CHAIN_ID: parseInt(process.env.NEXT_PUBLIC_CHAIN_ID!),
+  ALCHEMY_API_KEY: process.env.NEXT_PUBLIC_ALCHEMY_API_KEY!,
+};
+```
+

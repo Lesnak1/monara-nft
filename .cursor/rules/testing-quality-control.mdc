@@ -1,0 +1,429 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Testing & Quality Control Rules
+
+## Comprehensive Testing Strategy
+
+### Smart Contract Testing (Foundry)
+
+#### Test Structure & Organization
+Test dosyalarını logical olarak organize et:
+
+```solidity
+// test/unit/NFTContract.t.sol - Unit tests
+// test/integration/NFTMinting.t.sol - Integration tests
+// test/fuzz/NFTFuzz.t.sol - Fuzz tests
+// test/invariant/NFTInvariant.t.sol - Invariant tests
+
+import "forge-std/Test.sol";
+import "../src/NFTContract.sol";
+
+contract NFTContractTest is Test {
+    NFTContract public nft;
+    address public owner = makeAddr("owner");
+    address public user1 = makeAddr("user1");
+    address public user2 = makeAddr("user2");
+    
+    function setUp() public {
+        vm.prank(owner);
+        nft = new NFTContract();
+    }
+}
+```
+
+#### Comprehensive Test Coverage
+Her fonksiyon için positive ve negative case'leri test et:
+
+```solidity
+contract MintingTest is Test {
+    function testMintSuccess() public {
+        vm.prank(user1);
+        uint256 tokenId = nft.mint{value: 0.1 ether}();
+        
+        assertEq(nft.ownerOf(tokenId), user1);
+        assertEq(nft.balanceOf(user1), 1);
+        assertEq(nft.totalSupply(), 1);
+    }
+    
+    function testMintFailsWithInsufficientPayment() public {
+        vm.prank(user1);
+        vm.expectRevert("Insufficient payment");
+        nft.mint{value: 0.05 ether}();
+    }
+    
+    function testMintFailsWhenPaused() public {
+        vm.prank(owner);
+        nft.pause();
+        
+        vm.prank(user1);
+        vm.expectRevert("Pausable: paused");
+        nft.mint{value: 0.1 ether}();
+    }
+    
+    function testMintFailsWhenMaxSupplyReached() public {
+        // Mint max supply
+        for (uint256 i = 0; i < nft.MAX_SUPPLY(); i++) {
+            vm.prank(makeAddr(string(abi.encodePacked("user", i))));
+            nft.mint{value: 0.1 ether}();
+        }
+        
+        vm.prank(user1);
+        vm.expectRevert("Max supply reached");
+        nft.mint{value: 0.1 ether}();
+    }
+}
+```
+
+#### Property-Based Testing (Fuzzing)
+Edge case'leri keşfetmek için fuzzing kullan:
+
+```solidity
+contract NFTFuzzTest is Test {
+    function testFuzzMint(address minter, uint256 payment) public {
+        vm.assume(minter != address(0));
+        vm.assume(payment <= type(uint128).max);
+        
+        if (payment >= nft.mintPrice()) {
+            vm.deal(minter, payment);
+            vm.prank(minter);
+            uint256 tokenId = nft.mint{value: payment}();
+            assertEq(nft.ownerOf(tokenId), minter);
+        } else {
+            vm.deal(minter, payment);
+            vm.prank(minter);
+            vm.expectRevert("Insufficient payment");
+            nft.mint{value: payment}();
+        }
+    }
+    
+    function testFuzzSVGGeneration(uint256 seed, uint256 timestamp) public {
+        vm.assume(seed != 0);
+        vm.assume(timestamp > block.timestamp);
+        vm.assume(timestamp < block.timestamp + 365 days);
+        
+        string memory svg = nft.generateSVG(seed, timestamp);
+        assertTrue(bytes(svg).length > 0);
+        assertTrue(bytes(svg).length < 50000); // Reasonable size limit
+        
+        // Test SVG contains required elements
+        assertTrue(contains(svg, "<svg"));
+        assertTrue(contains(svg, "</svg>"));
+    }
+}
+```
+
+#### Invariant Testing
+Sistemin her zaman korunması gereken özelliklerini test et:
+
+```solidity
+contract NFTInvariantTest is Test {
+    NFTContract public nft;
+    
+    function setUp() public {
+        nft = new NFTContract();
+    }
+    
+    function invariant_totalSupplyNeverExceedsMaxSupply() public {
+        assertLe(nft.totalSupply(), nft.MAX_SUPPLY());
+    }
+    
+    function invariant_balanceOfSumEqualsTotalSupply() public {
+        uint256 totalBalance = 0;
+        for (uint256 i = 0; i < nft.totalSupply(); i++) {
+            address owner = nft.ownerOf(i + 1);
+            totalBalance += nft.balanceOf(owner);
+        }
+        assertEq(totalBalance, nft.totalSupply());
+    }
+    
+    function invariant_noTokenWithoutOwner() public {
+        for (uint256 i = 1; i <= nft.totalSupply(); i++) {
+            address owner = nft.ownerOf(i);
+            assertTrue(owner != address(0));
+        }
+    }
+}
+```
+
+### Frontend Testing (Next.js/React)
+
+#### Component Testing with React Testing Library
+User behavior'ına odaklanan testler yaz:
+
+```typescript
+// __tests__/components/NFTMinter.test.tsx
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { NFTMinter } from '@/components/NFTMinter';
+import { useAccount, useContractWrite } from 'wagmi';
+
+// Mock wagmi hooks
+jest.mock('wagmi', () => ({
+  useAccount: jest.fn(),
+  useContractWrite: jest.fn(),
+}));
+
+describe('NFTMinter', () => {
+  const mockMint = jest.fn();
+  
+  beforeEach(() => {
+    (useAccount as jest.Mock).mockReturnValue({
+      address: '0x123',
+      isConnected: true,
+    });
+    
+    (useContractWrite as jest.Mock).mockReturnValue({
+      write: mockMint,
+      isLoading: false,
+    });
+  });
+  
+  it('renders mint button when wallet is connected', () => {
+    render(<NFTMinter />);
+    expect(screen.getByText('Mint NFT')).toBeInTheDocument();
+  });
+  
+  it('calls mint function when button is clicked', async () => {
+    render(<NFTMinter />);
+    
+    fireEvent.click(screen.getByText('Mint NFT'));
+    
+    await waitFor(() => {
+      expect(mockMint).toHaveBeenCalledTimes(1);
+    });
+  });
+  
+  it('shows connect wallet message when not connected', () => {
+    (useAccount as jest.Mock).mockReturnValue({
+      address: undefined,
+      isConnected: false,
+    });
+    
+    render(<NFTMinter />);
+    expect(screen.getByText('Connect your wallet to mint')).toBeInTheDocument();
+  });
+});
+```
+
+#### Integration Testing
+End-to-end workflow'ları test et:
+
+```typescript
+// __tests__/integration/minting-flow.test.tsx
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { App } from '@/pages/_app';
+import { createMockContract } from '@/test-utils/mockContract';
+
+describe('NFT Minting Flow', () => {
+  it('completes full minting workflow', async () => {
+    const mockContract = createMockContract();
+    
+    render(<App />);
+    
+    // 1. Connect wallet
+    fireEvent.click(screen.getByText('Connect Wallet'));
+    await waitFor(() => {
+      expect(screen.getByText('Connected')).toBeInTheDocument();
+    });
+    
+    // 2. Navigate to minting page
+    fireEvent.click(screen.getByText('Mint NFT'));
+    
+    // 3. Fill minting form
+    fireEvent.change(screen.getByLabelText('NFT Name'), {
+      target: { value: 'Test NFT' },
+    });
+    
+    // 4. Submit mint transaction
+    fireEvent.click(screen.getByText('Mint'));
+    
+    // 5. Wait for transaction confirmation
+    await waitFor(() => {
+      expect(screen.getByText('NFT minted successfully!')).toBeInTheDocument();
+    });
+    
+    expect(mockContract.mint).toHaveBeenCalledWith({
+      name: 'Test NFT',
+      // other expected parameters
+    });
+  });
+});
+```
+
+#### Custom Hook Testing
+Custom hook'ları isolate şekilde test et:
+
+```typescript
+// __tests__/hooks/useNFTContract.test.ts
+import { renderHook, act } from '@testing-library/react';
+import { useNFTContract } from '@/hooks/useNFTContract';
+
+describe('useNFTContract', () => {
+  it('returns mint function and transaction state', () => {
+    const { result } = renderHook(() => useNFTContract());
+    
+    expect(result.current.mintNFT).toBeDefined();
+    expect(result.current.transaction).toBeNull();
+    expect(result.current.isLoading).toBe(false);
+  });
+  
+  it('handles minting process correctly', async () => {
+    const { result } = renderHook(() => useNFTContract());
+    
+    act(() => {
+      result.current.mintNFT({
+        name: 'Test NFT',
+        description: 'Test Description',
+      });
+    });
+    
+    expect(result.current.isLoading).toBe(true);
+    
+    // Wait for transaction completion
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+      expect(result.current.transaction).toBeDefined();
+    });
+  });
+});
+```
+
+## Quality Control & Code Standards
+
+### Linting & Formatting
+Tutarlı code style için automated tooling kullan:
+
+```json
+// .eslintrc.json
+{
+  "extends": [
+    "next/core-web-vitals",
+    "@typescript-eslint/recommended",
+    "prettier"
+  ],
+  "rules": {
+    "@typescript-eslint/no-unused-vars": "error",
+    "@typescript-eslint/explicit-function-return-type": "warn",
+    "prefer-const": "error",
+    "no-var": "error"
+  }
+}
+
+// .prettierrc
+{
+  "semi": true,
+  "trailingComma": "es5",
+  "singleQuote": true,
+  "printWidth": 80,
+  "tabWidth": 2
+}
+```
+
+### Type Coverage
+TypeScript strict mode kullan ve type coverage'ı monitor et:
+
+```json
+// tsconfig.json
+{
+  "compilerOptions": {
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "exactOptionalPropertyTypes": true
+  }
+}
+```
+
+### Performance Testing
+Gas consumption ve frontend performance'ı monitor et:
+
+```solidity
+// Gas benchmarking
+contract GasBenchmark is Test {
+    function testMintGasCost() public {
+        uint256 gasBefore = gasleft();
+        nft.mint{value: 0.1 ether}();
+        uint256 gasUsed = gasBefore - gasleft();
+        
+        // Assert reasonable gas usage
+        assertLt(gasUsed, 200000); // Should use less than 200k gas
+        console.log("Mint gas cost:", gasUsed);
+    }
+}
+```
+
+```typescript
+// Frontend performance testing
+import { performance } from 'perf_hooks';
+
+const measureComponentRender = () => {
+  const start = performance.now();
+  render(<NFTGallery nfts={largeMockData} />);
+  const end = performance.now();
+  
+  expect(end - start).toBeLessThan(100); // Should render in <100ms
+};
+```
+
+### Continuous Integration
+CI/CD pipeline'da automated testing implement et:
+
+```yaml
+# .github/workflows/test.yml
+name: Test Suite
+
+on: [push, pull_request]
+
+jobs:
+  smart-contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: foundry-rs/foundry-toolchain@v1
+      - run: forge test
+      - run: forge coverage
+      
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      - run: npm ci
+      - run: npm run test
+      - run: npm run test:e2e
+      - run: npm run lint
+      - run: npm run type-check
+```
+
+### Code Review Standards
+Pull request'lerde aranacak kriterler:
+
+```markdown
+## Code Review Checklist
+
+### Smart Contracts
+- [ ] All functions have proper NatSpec documentation
+- [ ] Access control is properly implemented
+- [ ] Gas optimizations are reasonable
+- [ ] Security patterns are followed
+- [ ] Tests cover all edge cases
+
+### Frontend
+- [ ] Components are properly typed
+- [ ] Error states are handled
+- [ ] Loading states are implemented
+- [ ] Accessibility guidelines are followed
+- [ ] Performance is optimized
+
+### General
+- [ ] Code follows project style guidelines
+- [ ] No sensitive information is exposed
+- [ ] Documentation is updated
+- [ ] Tests are passing
+```
+

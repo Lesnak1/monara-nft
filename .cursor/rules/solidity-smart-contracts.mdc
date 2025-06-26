@@ -1,0 +1,235 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Solidity & Foundry Smart Contract Rules
+
+## Best Practices & Security
+
+### Function Visibility & Documentation
+- Explicit function visibility kullan (public, external, internal, private)
+- Tüm public ve external fonksiyonlar için kapsamlı NatSpec comments sağla (@dev, @param, @return)
+
+```solidity
+/**
+ * @dev Mints a new NFT with dynamic SVG generation
+ * @param to The address to mint the NFT to
+ * @param tokenData The data used for SVG generation
+ * @return tokenId The ID of the newly minted token
+ */
+function mint(address to, TokenData calldata tokenData) external returns (uint256 tokenId) {
+    // Implementation
+}
+```
+
+### Custom Errors
+Daha iyi gas verimliliği ve net error handling için custom error'lar kullan:
+
+```solidity
+error Unauthorized();
+error InvalidTokenId(uint256 tokenId);
+error InsufficientFunds(uint256 required, uint256 provided);
+
+// revert() strings yerine:
+if (msg.sender != owner) revert Unauthorized();
+```
+
+### Checks-Effects-Interactions Pattern
+Reentrancy vulnerability'lerini önlemek için bu pattern'i sıkı şekilde takip et:
+
+```solidity
+function withdraw() external {
+    // Checks
+    require(balances[msg.sender] > 0, "No balance");
+    
+    // Effects
+    uint256 amount = balances[msg.sender];
+    balances[msg.sender] = 0;
+    
+    // Interactions
+    (bool success, ) = msg.sender.call{value: amount}("");
+    require(success, "Transfer failed");
+}
+```
+
+### Access Control
+Fine-grained, role-based permissions için OpenZeppelin'in AccessControl'ünü kullan:
+
+```solidity
+import "@openzeppelin/contracts/access/AccessControl.sol";
+
+contract MyNFT is AccessControl {
+    bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
+    
+    modifier onlyMinter() {
+        require(hasRole(MINTER_ROLE, msg.sender), "Not a minter");
+        _;
+    }
+}
+```
+
+### Solidity Version & Safety
+- Solidity 0.8.20 veya daha yüksek sürüm kullan (built-in overflow protection ve modern features için)
+- Uygun durumlarda OpenZeppelin kütüphanelerini kullan: ReentrancyGuard, Pausable, Address
+
+### State & Logic Patterns
+- Constructor'da set edilen constant'lar için `immutable` kullan
+- Derin inheritance chain'leri yerine composition'ı tercih et
+- Karmaşık logic için effective state machine pattern'leri implement et
+
+```solidity
+contract NFTMinter {
+    enum Phase { Setup, Presale, PublicSale, Ended }
+    Phase public currentPhase;
+    
+    modifier onlyInPhase(Phase _phase) {
+        require(currentPhase == _phase, "Invalid phase");
+        _;
+    }
+}
+```
+
+## Gas & Performance Optimization
+
+### Storage Packing
+State variable'ları daha az storage slot'a pack etmek için akıllıca sırala:
+
+```solidity
+struct TokenData {
+    uint128 price;      // 16 bytes
+    uint64 timestamp;   // 8 bytes
+    uint32 rarity;      // 4 bytes
+    uint32 category;    // 4 bytes - Total: 32 bytes (1 slot)
+}
+```
+
+### Efficient Data Types
+Amaca uygun en küçük integer türlerini kullan:
+
+```solidity
+uint32 public constant MAX_SUPPLY = 10000;  // uint256 yerine uint32
+uint32 public immutable deployTimestamp;    // Timestamp'lar için uint32 güvenli
+```
+
+### On-Chain SVG Optimization
+SVG generation'da gas maliyetlerine aşırı dikkat et:
+
+```solidity
+import "@openzeppelin/contracts/utils/Strings.sol";
+
+library SVGGenerator {
+    function generateSVG(TokenData memory data) internal pure returns (string memory) {
+        return string.concat(
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">',
+            '<rect fill="hsl(',
+            Strings.toString(data.hue),
+            ',70%,50%)" width="400" height="400"/>',
+            '</svg>'
+        );
+    }
+}
+```
+
+### Assembly Usage
+Assembly'yi sadece kritik gas optimizasyonları için son çare olarak kullan ve purpose ile risk'leri kapsamlı şekilde belgelende:
+
+```solidity
+/**
+ * @dev Efficiently pack two uint128 values into a single uint256
+ * RISK: Assembly bypasses Solidity's type safety checks
+ */
+function packTwoUint128(uint128 a, uint128 b) internal pure returns (uint256 packed) {
+    assembly {
+        packed := or(shl(128, a), b)
+    }
+}
+```
+
+## Testing & Workflow (Foundry)
+
+### Test Structure
+Foundry ile kapsamlı test suite implement et:
+
+```solidity
+// test/MyNFT.t.sol
+import "forge-std/Test.sol";
+import "../src/MyNFT.sol";
+
+contract MyNFTTest is Test {
+    MyNFT public nft;
+    address public user = makeAddr("user");
+    
+    function setUp() public {
+        nft = new MyNFT();
+    }
+    
+    function testMint() public {
+        vm.prank(user);
+        uint256 tokenId = nft.mint();
+        assertEq(nft.ownerOf(tokenId), user);
+    }
+    
+    function testFuzzMint(uint256 amount) public {
+        vm.assume(amount > 0 && amount <= 100);
+        // Fuzz testing implementation
+    }
+}
+```
+
+### Property-Based Testing (Fuzzing)
+Özellikle geniş input range'li render ve mint fonksiyonları için edge case'leri keşfetmek üzere Foundry'nin fuzzing yeteneklerini kullan:
+
+```solidity
+function testFuzzSVGGeneration(uint256 seed, uint256 timestamp) public {
+    vm.assume(timestamp > block.timestamp);
+    vm.assume(seed != 0);
+    
+    string memory svg = nft.generateSVG(seed, timestamp);
+    assertTrue(bytes(svg).length > 0);
+    // Additional invariant checks
+}
+```
+
+### Foundry Workflow Tools
+- Detaylı testing için: `forge test -vvv`
+- User impersonation için: `vm.prank`
+- Error testing için: `vm.expectRevert`
+- Gas profiling için: `forge test --gas-report`
+
+### Static Analysis
+Düzenli olarak Slither gibi static analysis tool'ları çalıştır:
+
+```bash
+slither src/ --exclude-optimization --exclude-informational
+```
+
+## Libraries & Utilities
+
+### Reusable Logic Libraries
+Özellikle SVG generation logic için contract boyutunu azaltmak üzere reusable, karmaşık operasyonlar için library'ler kullan:
+
+```solidity
+library MathUtils {
+    function sqrt(uint256 x) internal pure returns (uint256) {
+        // Implementation
+    }
+}
+
+library ColorUtils {
+    function hslToRgb(uint256 h, uint256 s, uint256 l) internal pure returns (uint256, uint256, uint256) {
+        // Implementation
+    }
+}
+```
+
+### OpenZeppelin Integration
+Güvenlik ve standart uyumluluk için OpenZeppelin contracts'ını aktif olarak kullan:
+
+```solidity
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+```
+

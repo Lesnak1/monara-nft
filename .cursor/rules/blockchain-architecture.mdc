@@ -1,0 +1,71 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Blockchain & dApp Architecture Rules
+
+## Temel Prensipler
+
+### Plan First, Code Second
+Her geliştirme görevinde önce step-by-step düşün. Smart contract ve frontend etkilerini dikkate alarak, kod yazmadan önce pseudocode veya high-level plan ile neyi inşa edeceğini açıkla.
+
+### Code-First, Concise Explanations
+Birincil çıktın yüksek kaliteli kod olmalı. Açıklamaları kısa ve öze dön. Karmaşık kararların "neden"ini açıkla, "ne"yi değil.
+
+### Full Implementation, No Shortcuts
+İstenen tüm işlevselliği tam olarak uygula. //TODO, placeholder veya eksik parçalar BIRAKMA. Kodun tam ve tamamen işlevsel olmalı.
+
+### Context-Aware Changes
+Mevcut kodu değiştirirken sadece gerekli minimal bağlamı göster—değişikliklerin etrafında birkaç satır yeterli.
+
+### Embrace Innovation
+Projeyi öne çıkarmak için yeni teknolojiler, alışılmadık fikirler ve best-in-class kalıplar aktif olarak ara ve uygula.
+
+## dApp Architecture Pattern
+
+### End-to-End Type Safety
+Bu pazarlık kabul etmez. Solidity contract ABI'lerinden TypeScript türleri oluşturmak için TypeChain veya Scaffold-ETH'nin built-in hook'larını kullan. Frontend'de function argümanları, return değerleri ve event payload'larının tamamen typed olmasını sağla.
+
+### Clear Data Flow
+Net bir data flow tanımla. Off-chain log'lanması veya index'lenmesi gereken eylemler için contract event'leri (emit) kullan. UI'ın ihtiyaç duyduğu on-demand data retrieval için view/pure fonksiyonları kullan.
+
+### Optimistic UI & Transaction States
+Pürüzsüz UX için uygun durumlarda optimistic UI güncellemeleri uygula. Tüm transaction durumları için kullanıcıya net, real-time feedback sağla: "Confirm in wallet," "Minting in progress," "Success," ve "Error."
+
+### Robust Wallet Integration
+Tüm wallet bağlantıları ve blockchain etkileşimleri için battle-tested kütüphaneler olan wagmi ve viem (Scaffold-ETH 2'de dahil) kullan. Tüm bağlantı durumlarını (connected, disconnected, wrong network) zarif şekilde yönet.
+
+## NFT Design Excellence
+
+### On-Chain SVG Optimization
+SVG rendering fonksiyonlarında gas maliyetlerine aşırı dikkat et. string.concat ve verimli string manipülasyonu kullan. view ve pure fonksiyonları uygun şekilde kullan.
+
+### Metadata Standards
+ERC-721 ve ERC-1155 metadata standardlarına tam uyum sağla. OpenSea ve diğer marketplace'lerde perfect compatibility için attributes ve properties'leri doğru şekilde yapılandır.
+
+### Dynamic NFT Capabilities
+State-based rendering, upgradeable metadata ve time-based değişiklikler için dynamic NFT capabilities'leri implement et.
+
+## Project Structure Standards
+
+### Monorepo Architecture
+```
+project/
+├── packages/
+│   ├── contracts/          # Foundry project
+│   ├── nextjs/            # Next.js frontend
+│   └── common/            # Shared types & utilities
+├── .gitignore
+├── package.json
+└── README.md
+```
+
+### Configuration Management
+Environment-specific configuration'ları merkezi olarak yönet. Development, staging ve production ortamları için ayrı config dosyaları kullan.
+
+### Documentation Requirements
+- Solidity: Kapsamlı NatSpec comments
+- TypeScript/JS: Tüm fonksiyonlar ve karmaşık tipler için JSDoc comments
+- Project: Projenin mimarisini, setup talimatlarını ve key decisions'ları açıklayan güncel README.md. "Why"ı belgelende, sadece "what"i değil.
+

@@ -1,0 +1,342 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Security & Best Practices Rules
+
+## Critical Security Focus
+
+Sadece obvious olmayan, kritik security issue'lar için güvenliği mention et. Standard best practice'ların follow edildiğini assume et, novel vulnerability yoksa.
+
+## Smart Contract Security
+
+### Reentrancy Protection
+ReentrancyGuard'ı kritik fonksiyonlarda kullan:
+
+```solidity
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+
+contract SecureNFT is ReentrancyGuard {
+    function mint() external payable nonReentrant {
+        require(msg.value >= mintPrice, "Insufficient payment");
+        // Safe minting logic
+    }
+}
+```
+
+### Access Control Patterns
+Multi-tier access control implement et:
+
+```solidity
+import "@openzeppelin/contracts/access/AccessControl.sol";
+
+contract NFTContract is AccessControl {
+    bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
+    bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
+    bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
+    
+    constructor() {
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(ADMIN_ROLE, msg.sender);
+    }
+    
+    modifier onlyAdmin() {
+        require(hasRole(ADMIN_ROLE, msg.sender), "Not admin");
+        _;
+    }
+}
+```
+
+### Integer Overflow/Underflow
+Solidity 0.8+ built-in protection'ına güven, ancak manual check'ler gerekiyorsa:
+
+```solidity
+// Solidity 0.8+ otomatik overflow protection
+function safeMint(uint256 amount) external {
+    require(totalSupply + amount <= MAX_SUPPLY, "Exceeds max supply");
+    // Safe implementation
+}
+```
+
+### Gas Limit Considerations
+DoS attack'larını önlemek için gas-efficient loop'lar:
+
+```solidity
+// ❌ Potansiyel DoS vulnerability
+function massTransfer(address[] calldata recipients) external {
+    for (uint256 i = 0; i < recipients.length; i++) {
+        _transfer(msg.sender, recipients[i], 1);
+    }
+}
+
+// ✅ Gas-limited batch operations
+function batchMint(address[] calldata recipients) external onlyMinter {
+    require(recipients.length <= 20, "Batch too large");
+    for (uint256 i = 0; i < recipients.length; i++) {
+        _mint(recipients[i], ++totalSupply);
+    }
+}
+```
+
+### Oracle Manipulation Prevention
+External price feed'leri kullanırken:
+
+```solidity
+import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
+
+contract PriceAwareNFT {
+    AggregatorV3Interface internal priceFeed;
+    uint256 private constant PRICE_STALENESS_THRESHOLD = 3600; // 1 hour
+    
+    function getLatestPrice() internal view returns (uint256) {
+        (
+            uint80 roundId,
+            int256 price,
+            uint256 startedAt,
+            uint256 updatedAt,
+            uint80 answeredInRound
+        ) = priceFeed.latestRoundData();
+        
+        require(price > 0, "Invalid price");
+        require(updatedAt != 0, "Round not complete");
+        require(block.timestamp - updatedAt < PRICE_STALENESS_THRESHOLD, "Price too stale");
+        
+        return uint256(price);
+    }
+}
+```
+
+## Frontend Security
+
+### Private Key Management
+Private key'leri frontend'de asla store etme:
+
+```typescript
+// ❌ Asla yapma
+const PRIVATE_KEY = "your-private-key"; // Extremely dangerous!
+
+// ✅ Wallet connection ile güvenli interaction
+import { useAccount, useConnect } from 'wagmi';
+
+const WalletConnection = () => {
+  const { address, isConnected } = useAccount();
+  const { connect, connectors } = useConnect();
+  
+  return (
+    <div>
+      {isConnected ? (
+        <p>Connected: {address}</p>
+      ) : (
+        connectors.map((connector) => (
+          <button
+            key={connector.id}
+            onClick={() => connect({ connector })}
+          >
+            Connect {connector.name}
+          </button>
+        ))
+      )}
+    </div>
+  );
+};
+```
+
+### Transaction Validation
+User transaction'larını frontend'de validate et:
+
+```typescript
+interface ValidatedMintParams {
+  recipient: string;
+  amount: number;
+  maxPrice: bigint;
+}
+
+const validateMintParams = (params: any): ValidatedMintParams => {
+  if (!isAddress(params.recipient)) {
+    throw new Error("Invalid recipient address");
+  }
+  
+  if (!Number.isInteger(params.amount) || params.amount <= 0 || params.amount > 10) {
+    throw new Error("Invalid mint amount (1-10)");
+  }
+  
+  if (typeof params.maxPrice !== 'bigint' || params.maxPrice <= 0n) {
+    throw new Error("Invalid max price");
+  }
+  
+  return params as ValidatedMintParams;
+};
+```
+
+### Environment Variable Security
+Sensitive bilgileri environment variable'larda güvenli şekilde yönet:
+
+```typescript
+// ✅ Public environment variables only
+export const config = {
+  CONTRACT_ADDRESS: process.env.NEXT_PUBLIC_CONTRACT_ADDRESS!,
+  CHAIN_ID: process.env.NEXT_PUBLIC_CHAIN_ID!,
+  // ❌ Private keys asla NEXT_PUBLIC_ prefix'i ile expose etme
+};
+
+// Server-side için private variables (API routes'larda)
+const privateConfig = {
+  ALCHEMY_API_KEY: process.env.ALCHEMY_API_KEY!, // No NEXT_PUBLIC_ prefix
+  DATABASE_URL: process.env.DATABASE_URL!,
+};
+```
+
+### Content Security Policy
+Next.js app'te CSP headers implement et:
+
+```typescript
+// next.config.js
+const securityHeaders = [
+  {
+    key: 'Content-Security-Policy',
+    value: [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' blob: data: https:",
+      "connect-src 'self' https://*.alchemy.com https://*.infura.io wss://*.alchemy.com",
+      "frame-src 'none'",
+    ].join('; '),
+  },
+];
+
+module.exports = {
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: securityHeaders,
+      },
+    ];
+  },
+};
+```
+
+## Data Validation & Sanitization
+
+### Input Sanitization
+User input'larını her zaman sanitize ve validate et:
+
+```typescript
+import DOMPurify from 'dompurify';
+import { z } from 'zod';
+
+// Schema validation ile type safety
+const NFTMetadataSchema = z.object({
+  name: z.string().min(1).max(100),
+  description: z.string().max(1000),
+  attributes: z.array(z.object({
+    trait_type: z.string().min(1).max(50),
+    value: z.union([z.string().max(100), z.number()]),
+  })).max(20),
+});
+
+const sanitizeAndValidateMetadata = (input: unknown) => {
+  // First validate structure
+  const parsed = NFTMetadataSchema.parse(input);
+  
+  // Then sanitize string content
+  return {
+    ...parsed,
+    name: DOMPurify.sanitize(parsed.name),
+    description: DOMPurify.sanitize(parsed.description),
+    attributes: parsed.attributes.map(attr => ({
+      ...attr,
+      trait_type: DOMPurify.sanitize(attr.trait_type),
+      value: typeof attr.value === 'string' 
+        ? DOMPurify.sanitize(attr.value) 
+        : attr.value,
+    })),
+  };
+};
+```
+
+### Contract Address Validation
+Contract address'lerini runtime'da validate et:
+
+```typescript
+import { isAddress, getContract } from 'viem';
+
+const validateContractAddress = async (address: string, client: any) => {
+  if (!isAddress(address)) {
+    throw new Error("Invalid contract address format");
+  }
+  
+  try {
+    const bytecode = await client.getBytecode({ address });
+    if (!bytecode || bytecode === '0x') {
+      throw new Error("No contract found at address");
+    }
+  } catch (error) {
+    throw new Error("Failed to verify contract existence");
+  }
+  
+  return address;
+};
+```
+
+## Development Environment Security
+
+### Git Security
+Sensitive bilgileri git history'den uzak tut:
+
+```bash
+# .gitignore
+.env.local
+.env.production
+private-keys/
+secrets/
+*.pem
+*.key
+
+# Eğer yanlışlıkla commit edilmişse:
+git filter-branch --force --index-filter \
+  'git rm --cached --ignore-unmatch path/to/sensitive/file' \
+  --prune-empty --tag-name-filter cat -- --all
+```
+
+### Dependency Security
+Dependency'leri düzenli olarak audit et:
+
+```bash
+# Package vulnerabilities check
+npm audit
+npm audit fix
+
+# Foundry dependencies
+forge update
+```
+
+### Pre-deployment Checklist
+Deploy öncesi security checklist:
+
+```typescript
+// scripts/pre-deploy-check.ts
+const preDeploySecurityCheck = async () => {
+  // 1. Environment variables check
+  const requiredEnvVars = ['CONTRACT_ADDRESS', 'CHAIN_ID', 'ALCHEMY_API_KEY'];
+  for (const envVar of requiredEnvVars) {
+    if (!process.env[envVar]) {
+      throw new Error(`Missing required environment variable: ${envVar}`);
+    }
+  }
+  
+  // 2. Contract verification
+  await validateContractAddress(process.env.CONTRACT_ADDRESS!, client);
+  
+  // 3. Network validation
+  const chainId = await client.getChainId();
+  if (chainId !== parseInt(process.env.CHAIN_ID!)) {
+    throw new Error("Network mismatch");
+  }
+  
+  console.log("✅ Pre-deployment security checks passed");
+};
+```
+
