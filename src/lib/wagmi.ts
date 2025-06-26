@@ -1,9 +1,9 @@
 import { getDefaultConfig } from '@rainbow-me/rainbowkit';
-import { defineChain, createPublicClient, http } from 'viem';
+import { defineChain, createPublicClient, http, fallback } from 'viem';
 
-// Gerçek Monad Testnet Chain Definition
+// Güncel Monad Testnet Chain Definition (ChainID: 10143)
 export const monadTestnet = defineChain({
-  id: 41454,
+  id: 10143,
   name: 'Monad Testnet',
   nativeCurrency: {
     decimals: 18,
@@ -12,7 +12,17 @@ export const monadTestnet = defineChain({
   },
   rpcUrls: {
     default: {
-      http: ['https://testnet-rpc.monad.xyz'],
+      http: [
+        'https://testnet-rpc.monad.xyz',
+        'https://monad-testnet.rpc.thirdweb.com',
+      ],
+      webSocket: ['wss://testnet-rpc.monad.xyz'],
+    },
+    public: {
+      http: [
+        'https://testnet-rpc.monad.xyz',
+        'https://monad-testnet.rpc.thirdweb.com',
+      ],
       webSocket: ['wss://testnet-rpc.monad.xyz'],
     },
   },
@@ -34,7 +44,7 @@ export const monadTestnet = defineChain({
 
 // Monad Mainnet (Future)
 export const monadMainnet = {
-  id: 41455,
+  id: 1,
   name: 'Monad',
   nativeCurrency: {
     decimals: 18,
@@ -51,21 +61,61 @@ export const monadMainnet = {
   testnet: false,
 } as const;
 
+// Enhanced transport configuration with retry logic and CORS handling
+const createRobustTransport = () => {
+  return fallback([
+    http('https://testnet-rpc.monad.xyz', {
+      timeout: 10_000,
+      retryCount: 3,
+      retryDelay: 1000,
+      fetchOptions: {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        mode: 'cors',
+      },
+    }),
+    http('https://monad-testnet.rpc.thirdweb.com', {
+      timeout: 10_000,
+      retryCount: 2,
+      retryDelay: 1000,
+      fetchOptions: {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        mode: 'cors',
+              },
+      }),
+    ]);
+};
+
 export const config = getDefaultConfig({
   appName: 'MONARA',
   projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || 'default-project-id',
   chains: [monadTestnet],
   ssr: true, // If your dApp uses server side rendering (SSR)
+  transports: {
+    [monadTestnet.id]: createRobustTransport(),
+  },
 });
 
 // Export chain for use in other components
 export { monadTestnet as defaultChain };
 
-// Public client for read operations
+// Public client for read operations with robust transport
 export const publicClient = createPublicClient({
   chain: monadTestnet,
-  transport: http(),
+  transport: createRobustTransport(),
 });
+
+// Enhanced public client with better error handling
+export const createRobustPublicClient = () => {
+  return createPublicClient({
+    chain: monadTestnet,
+    transport: createRobustTransport(),
+    pollingInterval: 4_000, // Poll every 4 seconds instead of default 2
+  });
+};
 
 // Get current chain info
 export const getCurrentChain = () => {
@@ -87,15 +137,21 @@ export const MONAD_TESTNET_CHAIN_ID = 10143;
 export const MONAD_TESTNET_RPC = 'https://testnet-rpc.monad.xyz';
 export const MONAD_EXPLORER_URL = 'https://testnet.monadexplorer.com';
 
-// Contract addresses for Monad Testnet (to be updated when deployed)
+// Enhanced RPC URLs with fallbacks (removed problematic publicnode endpoint)
+export const MONAD_RPC_URLS = [
+  'https://testnet-rpc.monad.xyz',
+  'https://monad-testnet.rpc.thirdweb.com',
+] as const;
+
+// Contract addresses for Monad Testnet (DEPLOYED)
 export const CONTRACT_ADDRESSES = {
   [MONAD_TESTNET_CHAIN_ID]: {
-    MONARA_NFT: '0x0000000000000000000000000000000000000000', // Will be updated after deployment
+    MONARA_NFT: '0xd181dF3D2E8B8AB21bd49EFAf655a3AeFdd7c459', // ✅ DEPLOYED - Monad Testnet
     MONARA_MARKETPLACE: '0x0000000000000000000000000000000000000000',
   },
   // Local development addresses
   31337: {
-    MONARA_NFT: '0x0000000000000000000000000000000000000000',
+    MONARA_NFT: '0xd181dF3D2E8B8AB21bd49EFAf655a3AeFdd7c459', // Use same address for local testing
     MONARA_MARKETPLACE: '0x0000000000000000000000000000000000000000',
   },
 } as const; 

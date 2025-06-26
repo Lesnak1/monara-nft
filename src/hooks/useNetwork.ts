@@ -14,9 +14,20 @@ export interface NetworkInfo {
 }
 
 export const SUPPORTED_NETWORKS: Record<number, NetworkInfo> = {
-  // Monad Testnet - Gerçek network bilgileri
-  41454: {
-    id: 41454,
+  // Hardhat Local Network
+  31337: {
+    id: 31337,
+    name: 'Hardhat Local',
+    isSupported: true,
+    isTestnet: true,
+    color: 'bg-gray-500',
+    icon: '🔨',
+    rpcUrl: 'http://localhost:8545',
+    blockExplorer: 'http://localhost:8545'
+  },
+  // Monad Testnet - Güncel bilgiler (ChainID: 10143)
+  10143: {
+    id: 10143,
     name: 'Monad Testnet',
     isSupported: true,
     isTestnet: true,
@@ -24,17 +35,6 @@ export const SUPPORTED_NETWORKS: Record<number, NetworkInfo> = {
     icon: '🔮',
     rpcUrl: 'https://testnet-rpc.monad.xyz',
     blockExplorer: 'https://testnet.monadexplorer.com'
-  },
-  // Monad Mainnet (gelecekte)
-  41455: {
-    id: 41455,
-    name: 'Monad Mainnet',
-    isSupported: false, // Henüz aktif değil
-    isTestnet: false,
-    color: 'bg-emerald-500',
-    icon: '⚡',
-    rpcUrl: 'https://rpc.monad.xyz',
-    blockExplorer: 'https://monadexplorer.com'
   },
   // Ethereum Mainnet (karşılaştırma için)
   1: {
@@ -94,24 +94,36 @@ export function useNetwork() {
     };
   })();
 
-  const isMonadNetwork = chainId === 41454; // Gerçek Monad Testnet Chain ID
+  const isMonadNetwork = chainId === 10143; // Monad Testnet Chain ID
   const isSupported = isMonadNetwork;
   const isWrongNetwork = !isMonadNetwork;
 
   const switchToMonadTestnet = () => {
-    switchChain({ chainId: 41454 });
+    switchChain({ chainId: 10143 });
+  };
+
+  const switchToHardhatLocal = () => {
+    switchChain({ chainId: 31337 });
   };
 
   const switchToMonad = () => {
     // Şimdilik testnet'e yönlendir çünkü mainnet henüz aktif değil
-    switchChain({ chainId: 41454 });
+    switchChain({ chainId: 10143 });
   };
 
   const getNetworkStatus = () => {
-    if (chainId === 41454) {
+    if (chainId === 10143) {
       return {
         status: 'connected',
         message: 'Connected to Monad Testnet',
+        color: 'text-green-600 dark:text-green-400'
+      };
+    }
+    
+    if (chainId === 31337) {
+      return {
+        status: 'connected',
+        message: 'Connected to Hardhat Local',
         color: 'text-green-600 dark:text-green-400'
       };
     }
@@ -160,6 +172,7 @@ export function useNetwork() {
     isWrongNetwork,
     isSwitching,
     switchToMonadTestnet,
+    switchToHardhatLocal,
     switchToMonad,
     switchChain,
     getNetworkStatus,

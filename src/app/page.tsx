@@ -274,19 +274,19 @@ export default function HomePage() {
           <section className="text-center space-y-8 opacity-0 animate-[fadeIn_1s_ease-out_0.8s_forwards]">
             <div className="bg-gradient-to-r from-purple-900/20 to-emerald-900/20 rounded-3xl p-8 md:p-12 border border-white/10">
               <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-                Ready to Begin Your Journey?
-              </h2>
+              Ready to Begin Your Journey?
+            </h2>
               <p className="text-lg text-white/70 mb-8 max-w-2xl mx-auto">
                 Join the evolution on Monad&apos;s revolutionary blockchain. Mint your first Digital Being and watch it evolve.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link href="/mint" className="inline-flex items-center px-8 py-4 text-lg font-medium rounded-2xl bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white transition-all duration-200 hover:scale-105">
-                  <Sparkles className="w-5 h-5 mr-2" />
+                <Sparkles className="w-5 h-5 mr-2" />
                   Start Minting Now
-                </Link>
+              </Link>
                 <Link href="/about" className="inline-flex items-center px-8 py-4 text-lg font-medium rounded-2xl border border-white/20 bg-white/5 hover:bg-white/10 text-white transition-all duration-200 hover:scale-105">
-                  Learn More
-                </Link>
+                Learn More
+              </Link>
               </div>
             </div>
           </section>

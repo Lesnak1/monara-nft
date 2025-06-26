@@ -134,11 +134,11 @@ export function Header() {
                       {(() => {
                         if (!connected) {
                           return (
-                            <button
+              <button
                               onClick={openConnectModal}
-                              className="btn btn-primary text-sm px-3 sm:px-4 py-2 font-medium whitespace-nowrap"
-                            >
-                              <span className="hidden sm:inline">Connect Wallet</span>
+                className="btn btn-primary text-sm px-3 sm:px-4 py-2 font-medium whitespace-nowrap"
+              >
+                <span className="hidden sm:inline">Connect Wallet</span>
                               <span className="sm:hidden">Connect</span>
                             </button>
                           );
@@ -164,8 +164,8 @@ export function Header() {
                               <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
                               <span className="text-sm font-medium text-white">
                                 {chain.name}
-                              </span>
-                            </button>
+                </span>
+              </button>
                             
                             <button
                               onClick={openAccountModal}
