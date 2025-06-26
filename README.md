@@ -1,173 +1,316 @@
-# 🌌 Monad Studio: Evolving Monanimals
+# 🔮 MONARA - Evolving Digital Beings
 
-**Winner of the Monad Hackathon - Track 1 (NFTs) & Track 2 (NFT Tooling)**
+**Dynamic NFT Collection on Monad Network**
 
-> *Create, evolve, and experience the cosmic magic of Monanimals - fully on-chain, animated SVG NFTs that grow and transform with time.*
+MONARA is a collection of evolving digital beings that leverages Monad blockchain's parallel processing power with a fully on-chain SVG rendering system.
 
-![Monad Studio Banner](https://via.placeholder.com/800x300/6366f1/ffffff?text=Monad+Studio%3A+Evolving+Monanimals)
+## 🌐 Current Network Information
 
-## 🎯 What is Monad Studio?
+### Monad Testnet
+- **Chain ID**: `10143` (0x279f)
+- **RPC URL**: `https://testnet-rpc.monad.xyz`
+- **Currency**: MON
+- **Block Gas Limit**: 150,000,000
+- **Explorer**: https://testnet.monadexplorer.com
+- **Faucet**: https://faucet.monad.xyz
 
-Monad Studio is a revolutionary NFT creation platform that combines **Track 1 (NFT Collection)** and **Track 2 (NFT Tooling)** into one cohesive experience. It's both a unique NFT collection AND a powerful tool for creating cosmic beings inspired by Monad lore.
+## ✨ Key Features
 
-### 🌟 Key Features
+### 🧬 Dual Genesis System
+- **Neural Genesis** (0.1 MON): Standard minting with mutation
+- **Quantum Genesis** (0.25 MON): Enhanced traits with higher mutation rates
 
-- **🎨 Visual NFT Builder**: Drag-and-drop interface for creating Monanimals without coding
-- **🧬 Evolution Mechanics**: NFTs that change and grow more powerful over time
-- **⛓️ Fully On-Chain**: No IPFS dependencies - everything lives on the blockchain
-- **🌌 Monad Lore Integration**: Cosmic themes, galaxy backgrounds, and mystical accessories
-- **✨ Animated SVG**: Dynamic sparkles and glowing effects that evolve with age
-- **💎 Rarity System**: Unique trait combinations with different levels of scarcity
+### 🔄 Evolution Stages
+1. **Spark** → 2. **Pulse** → 3. **Flow** → 4. **Nexus**
+- Time-based evolution every 7 days
+- Increasing complexity and rarity
 
-## 🚀 Why This Wins the Hackathon
+### 🎨 On-Chain Art Generation
+- **8 Core Geometries**: Circle, Diamond, Hexagon, Octagon, Star, Triangle, Pentagon, Cross
+- **5 Pathway Patterns**: Linear, Curved, Spiral, Fractal, Wave  
+- **6 Particle Systems**: 120-frame animation cycles
+- **Dynamic Coloring**: HSL-based color evolution
 
-### Track 1 (NFTs) - Innovation ✅
-- **Completely Novel**: Not just another PFP collection - these are living, breathing cosmic entities
-- **Technical Excellence**: Fully on-chain SVG generation with gas-optimized rendering
-- **Monad Ecosystem**: Deep integration of Monad themes, lore, and visual identity
-- **Evolution Mechanics**: First NFT collection where tokens literally evolve over time
+### 🛡️ Security Features (Latest Updates)
+- **Rate Limiting**: 10 mints per hour per address
+- **Balance Validation**: Smart contract and frontend balance verification
+- **Input Sanitization**: XSS and injection protection
+- **Transaction Security**: Nonce-based request validation
+- **Reentrancy Protection**: OpenZeppelin security patterns
+- **Access Control**: Role-based permissions system
 
-### Track 2 (NFT Tooling) - Problem Solving ✅  
-- **Solves Real Problems**: "NFT generation is hard" and "Visual NFT builder needed"
-- **User-Friendly**: Non-technical users can create beautiful on-chain NFTs
-- **Open Source**: Fully documented, reusable by the community
-- **Developer Tools**: Complete SDK for building on top of the system
+### 🔧 Recent Improvements
+- **Enhanced Balance Checking**: Fixed MON token balance verification system
+- **Improved Error Handling**: Better user feedback for insufficient funds
+- **Security Hardening**: Additional validation layers for mint operations
+- **Network Compatibility**: Optimized for Monad Testnet (Chain ID: 10143)
+- **Gas Optimization**: Reduced gas costs for mint operations
 
-## 🎮 How It Works
+## 🚀 Quick Start
 
-### 1. Design Your Monanimal
-Use our intuitive visual builder to select:
-- **Body**: Cosmic Cube, Stellar Oval, Quantum Wave, etc.
-- **Eyes**: Galaxy Swirl, Star Sight, Third Eye, Ethereal Glow
-- **Mouth**: Joyful Cosmos, Stellar Surprise, Wave Dimension  
-- **Accessories**: Cosmic Crown, Monad Crystal, Galaxy Wings
-- **Background**: Dark Void, Purple Nebula, Galaxy Swirl
+### MetaMask Setup
 
-### 2. Mint Your Creation
-- **Custom Mint**: Choose exact traits for 0.01 ETH
-- **Random Mint**: Get surprise traits for 0.005 ETH (50% discount!)
-- **Name Your Monanimal**: Give it personality with a custom name
+1. **Add Monad Testnet to MetaMask**:
+   ```
+   Network Name: Monad Testnet
+   Chain ID: 10143
+   RPC URL: https://testnet-rpc.monad.xyz
+   Currency Symbol: MON
+   Block Explorer: https://testnet.monadexplorer.com
+   ```
 
-### 3. Watch It Evolve
-Your Monanimal grows more powerful with age:
-- **Newborn** (0-1 day): Pure cosmic energy
-- **Young** (1-7 days): Soft glowing aura appears  
-- **Mature** (1-4 weeks): Stronger aura and sparkle effects
-- **Ancient** (30+ days): Powerful multi-layered aura with intense animations
+2. **Get Testnet MON**: Visit [Monad Faucet](https://faucet.monad.xyz)
 
-## 🏗️ Technical Architecture
+### Development Setup
 
-### Smart Contracts (Solidity + Foundry)
-```
-src/
-├── Monanimal.sol           # Main ERC-721 contract
-├── SVGRenderer.sol         # On-chain SVG generation engine  
-├── libraries/
-│   └── MonanimalParts.sol  # SVG component library
-└── ...
-```
-
-### Frontend (Next.js + TypeScript)
-```
-frontend/
-├── components/
-│   ├── MonanimalBuilder.tsx    # Visual trait selector
-│   ├── EvolutionTracker.tsx    # Shows growth over time
-│   └── CollectionGallery.tsx   # User's Monanimals
-├── hooks/
-│   └── useMonanimalContract.ts # Contract interaction
-└── ...
-```
-
-## 🔥 Standout Features
-
-### 1. **Zero External Dependencies**
-- No IPFS, no centralized servers
-- Metadata and images generated entirely on-chain
-- Will work forever as long as Ethereum exists
-
-### 2. **Gas-Optimized SVG Engine**  
-- Efficient string concatenation
-- Minimal storage with maximum visual impact
-- Real-time preview without blockchain calls
-
-### 3. **Dynamic Evolution System**
-- Time-based trait modifications
-- Visual effects that change with age
-- Surprise evolutions for long-term holders
-
-### 4. **Community Builder Tools**
-- Open-source trait system
-- Easily extendable for new projects
-- Complete documentation and examples
-
-## 🛠️ Quick Start
-
-### Prerequisites
-- Node.js 18+
-- Foundry toolkit
-- MetaMask or compatible wallet
-
-### Smart Contracts Setup
 ```bash
-cd contracts
-forge install
-forge build
-forge test
-```
+# Clone repository
+git clone <repo-url>
+cd monad-studio
 
-### Frontend Setup  
-```bash
+# Install dependencies
+npm install
+
+# Frontend development
 cd frontend
 npm install
 npm run dev
+
+# Smart contracts
+cd ../contracts
+npm install
 ```
 
-### Deploy to Monad Testnet
+### Environment Variables
+
+Create `.env` in contracts folder:
+```env
+PRIVATE_KEY=your_private_key_here
+MONAD_TESTNET_RPC_URL=https://testnet-rpc.monad.xyz
+MONAD_API_KEY=your_api_key_here
+```
+
+## 🏗️ Architecture
+
+### Smart Contracts
+- **MONARA.sol**: Main NFT contract with evolution logic
+- **NeuralRenderer.sol**: On-chain SVG generation engine
+- **GeometryLib.sol**: Geometric shape rendering
+- **ColorLib.sol**: HSL color manipulation
+- **PathwayLib.sol**: Animation pathway generation
+
+### Frontend Stack
+- **Next.js 15.3.4**: React framework with App Router
+- **TypeScript**: Full type safety implementation
+- **TailwindCSS**: Utility-first styling
+- **Wagmi v2**: Ethereum interactions with React hooks
+- **RainbowKit**: Multi-wallet connection support
+- **Viem**: Type-safe Ethereum client
+
+## 🔧 Deployment
+
+### Smart Contract Deployment
 ```bash
-# Add your private key to .env
-forge script script/Deploy.s.sol --rpc-url $MONAD_RPC --broadcast
+cd contracts
+
+# Deploy to Monad Testnet
+npm run deploy:testnet
+
+# Verify contract
+npm run verify:testnet
 ```
 
-## 🎨 Gallery
+### Frontend Deployment
+```bash
+cd frontend
 
-| Evolution Stage | Visual Effect | Rarity |
-|---|---|---|
-| Newborn | Clean, simple design | Common |
-| Young | Soft glow around edges | Uncommon |  
-| Mature | Sparkle animations | Rare |
-| Ancient | Multi-layer aura effects | Ultra Rare |
+# Build for production
+npm run build
 
-## 🏆 Hackathon Compliance
+# Deploy (update with your deployment method)
+npm run deploy
+```
 
-- ✅ **Open Source**: MIT licensed, fully documented
-- ✅ **No Commercial Intent**: Built for the community
-- ✅ **Monad Ecosystem**: Deep theme integration
-- ✅ **Technical Innovation**: On-chain SVG + evolution mechanics
-- ✅ **Dual Track Winner**: Addresses both NFT and tooling challenges
+## 📊 Network Statistics
 
-## 🔗 Links
+The frontend includes real-time Monad network statistics:
+- **TPS**: Current transactions per second
+- **Block Height**: Current block number
+- **Gas Price**: Current gas price in Gwei
+- **Validators**: Active validator count
+- **Network Health**: Real-time monitoring
 
-- **Live Demo**: [https://monad-studio.vercel.app](https://monad-studio.vercel.app)
-- **Contract Explorer**: [View on Monad Explorer](https://explorer.monad.xyz)
-- **Documentation**: [Read the Docs](./docs/)
-- **Video Demo**: [Watch on YouTube](https://youtube.com/watch?v=demo)
+## 🎮 Usage
+
+1. **Connect Wallet**: Use built-in MetaMask connection
+2. **Add Network**: Automatic Monad Testnet addition
+3. **Get Testnet MON**: From the official faucet
+4. **Mint MONARA**: Choose Neural or Quantum Genesis
+5. **Watch Evolution**: Your NFT evolves every 7 days
+6. **Gallery**: View all minted NFTs with metadata
+
+## 🔍 Features Deep Dive
+
+### Evolution System
+- **Stage 1 (Spark)**: Basic geometric form
+- **Stage 2 (Pulse)**: Added pathways and movement
+- **Stage 3 (Flow)**: Complex particle systems
+- **Stage 4 (Nexus)**: Full neural network visualization
+
+### Mutation Mechanics
+- **Neural Genesis**: 15% trait mutation chance
+- **Quantum Genesis**: 35% trait mutation chance
+- **Evolution Trigger**: Automatic every 7 days
+- **Trait Inheritance**: Previous stage influences next
+
+### On-Chain SVG Features
+- **Gas Optimized**: Efficient string operations
+- **Fully Deterministic**: Same seed = same output
+- **Scalable**: Vector-based rendering
+- **Animated**: 120-frame animation cycles
+
+### Security Protocols
+- **Multi-Layer Validation**: Contract + Frontend validation
+- **Rate Limiting**: Prevents spam and abuse
+- **Balance Verification**: Real-time MON token balance checking
+- **Transaction Safety**: Secure nonce generation and validation
+- **Emergency Controls**: Pause functionality for critical issues
+
+## 🛠️ Development Commands
+
+### Frontend
+```bash
+npm run dev          # Development server
+npm run build        # Production build
+npm run start        # Production server
+npm run lint         # ESLint check
+npm run type-check   # TypeScript check
+```
+
+### Smart Contracts
+```bash
+npm run compile     # Compile contracts
+npm run test        # Run tests
+npm run deploy:testnet    # Deploy to Monad Testnet
+npm run verify:testnet    # Verify on explorer
+```
+
+## 🚨 Network Troubleshooting
+
+### MetaMask Connection Issues
+1. Ensure MetaMask is installed and updated
+2. Add Monad Testnet manually if auto-add fails
+3. Check RPC URL: `https://testnet-rpc.monad.xyz`
+4. Verify Chain ID: `10143`
+
+### Common Issues
+- **Wrong Network**: Use the network switcher in the app
+- **No MON Tokens**: Get from the faucet (ensure sufficient balance)
+- **Transaction Failed**: Check gas limits and network status
+- **MetaMask Errors**: Clear cache and restart browser
+- **Balance Issues**: Wait for network sync, refresh page
+
+### Balance Verification
+- **Frontend Check**: Real-time balance display
+- **Contract Validation**: Smart contract balance verification
+- **Error Messages**: Clear feedback for insufficient funds
+- **Automatic Refresh**: Balance updates on transaction completion
+
+## 📁 Project Structure
+
+```
+monad-studio/
+├── contracts/                  # Smart contracts
+│   ├── src/
+│   │   ├── MONARA.sol         # Main NFT contract
+│   │   └── libraries/         # Supporting libraries
+│   ├── test/                  # Contract tests
+│   ├── scripts/               # Deployment scripts
+│   └── hardhat.config.js      # Hardhat configuration
+├── frontend/                   # Next.js application
+│   ├── src/
+│   │   ├── app/               # App router pages
+│   │   ├── components/        # React components
+│   │   ├── hooks/             # Custom hooks
+│   │   └── lib/               # Utilities
+│   └── package.json
+└── README.md
+```
+
+## 🔒 Security Considerations
+
+### Smart Contract Security
+- **Access Control**: Role-based permissions
+- **Reentrancy Protection**: OpenZeppelin guards
+- **Input Validation**: Comprehensive parameter checking
+- **Emergency Pause**: Circuit breaker pattern
+- **Rate Limiting**: Built-in abuse prevention
+
+### Frontend Security
+- **XSS Protection**: Input sanitization
+- **CSRF Prevention**: Secure state management
+- **Content Security Policy**: Strict CSP headers
+- **Balance Validation**: Multiple verification layers
+- **Error Handling**: Secure error messages
+
+## 🧪 Testing
+
+### Smart Contract Tests
+```bash
+cd contracts
+npm test                    # Run all tests
+npm run test:coverage      # Coverage report
+npm run test:gas          # Gas optimization tests
+```
+
+### Frontend Tests
+```bash
+cd frontend
+npm test                   # Unit tests
+npm run test:e2e          # End-to-end tests
+npm run test:security     # Security tests
+```
 
 ## 🤝 Contributing
 
-We welcome contributions! This project is designed to be:
-- **Extensible**: Easy to add new traits and effects
-- **Educational**: Well-commented code for learning
-- **Community-Driven**: Built by builders, for builders
+1. Fork the repository
+2. Create feature branch: `git checkout -b feature/amazing-feature`
+3. Commit changes: `git commit -m 'Add amazing feature'`
+4. Push to branch: `git push origin feature/amazing-feature`
+5. Open a Pull Request
 
-## 📜 License
+### Development Guidelines
+- Follow TypeScript best practices
+- Write comprehensive tests
+- Update documentation
+- Follow security protocols
+- Test on Monad Testnet before submitting
 
-MIT License - Build amazing things with this code!
+## 📄 License
 
-## 🌟 The Team
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-Built with ❤️ by passionate builders who believe in the future of on-chain creativity and the Monad ecosystem.
+## 🔗 Links
+
+- **Frontend**: http://localhost:3000 (development)
+- **Monad Testnet Explorer**: https://testnet.monadexplorer.com
+- **Monad Faucet**: https://faucet.monad.xyz
+- **Monad Documentation**: https://docs.monad.xyz
+
+## 🆕 Latest Updates
+
+### Version 2.1.0 (Current)
+- **Fixed**: MON token balance verification system
+- **Enhanced**: Error handling for insufficient funds
+- **Added**: Multi-layer security validation
+- **Improved**: Network compatibility checks
+- **Optimized**: Gas costs for minting operations
+
+### Previous Updates
+- **Version 2.0.0**: Initial release with dual genesis system
+- **Version 1.5.0**: On-chain SVG rendering implementation
+- **Version 1.0.0**: Basic NFT collection launch
 
 ---
 
-*"In the cosmic realm of Monad, every Monanimal tells a story of growth, evolution, and the infinite possibilities of on-chain creativity."* 
+Built with ❤️ for the Monad Ecosystem
