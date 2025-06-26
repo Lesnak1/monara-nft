@@ -134,28 +134,6 @@ MONARA.sol
 
 ---
 
-## 🌐 Deploy Your Own
-
-### Deploy to Vercel (Recommended)
-
-1. **Fork this repository** to your GitHub account
-2. **Import to Vercel**:
-   - Go to [vercel.com](https://vercel.com/new)
-   - Select "Import Git Repository"
-   - Choose your forked repo
-3. **Configure Environment Variables**:
-   - Add all variables from `.env` example above
-   - Make sure `NEXT_PUBLIC_` prefix is included
-4. **Deploy**: Click "Deploy" and wait for build completion
-5. **Share**: Your dApp will be live at `your-project.vercel.app`
-
-### Alternative Deployment Options
-- **Netlify**: Connect GitHub repo and deploy
-- **Railway**: One-click deployment with GitHub integration
-- **Self-hosted**: `npm run build && npm run start`
-
----
-
 ## 🗺️ Roadmap
 
 ### ✅ Phase 1: Core Platform (Completed)
