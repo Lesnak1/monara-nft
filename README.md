@@ -113,13 +113,7 @@ Visit [http://localhost:3000](http://localhost:3000) and connect your wallet to 
 <div align="center">
 
 ### 🏠 Home Page - Live Network Stats
-![Home Page](https://via.placeholder.com/800x400/0A0A0F/FFFFFF?text=🏠+Home+Page+with+Live+Stats)
-
-### 🎨 Mint Interface - Choose Your Genesis
-![Mint Page](https://via.placeholder.com/800x400/836EF9/FFFFFF?text=🎨+Mint+Interface)
-
-### 🧬 NFT Evolution - Watch Them Grow
-![NFT Evolution](https://via.placeholder.com/800x400/00D4AA/FFFFFF?text=🧬+Evolution+Stages)
+https://drive.google.com/file/d/1rGo7eUr-y4rmhpDCZaFERZ5i5PpUvF-i/view
 
 </div>
 
