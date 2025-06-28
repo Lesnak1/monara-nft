@@ -49,8 +49,21 @@ export async function GET(
       );
     }
 
-    // Get SVG from contract and add animations
+    // First check if token exists by checking totalSupply
     try {
+      // Check if token exists
+      const totalSupply = await publicClient.readContract({
+        address: MONARA_CONTRACT_ADDRESS,
+        abi: MONARA_ABI,
+        functionName: 'totalSupply',
+      }) as bigint;
+
+      if (BigInt(tokenId) > totalSupply || BigInt(tokenId) < 1) {
+        console.log(`Token ${tokenId} doesn't exist yet. Total supply: ${totalSupply}`);
+        throw new Error('Token not minted yet');
+      }
+
+      // Get SVG from contract and add animations
       const svg = await publicClient.readContract({
         address: MONARA_CONTRACT_ADDRESS,
         abi: MONARA_ABI,

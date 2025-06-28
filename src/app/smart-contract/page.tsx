@@ -34,7 +34,7 @@ export default function SmartContractPage() {
     setTimeout(() => setCopiedCode(null), 2000);
   };
 
-  const contractAddress = "0xd181dF3D2E8B8AB21bd49EFAf655a3AeFdd7c459";
+  const contractAddress = "0xa7793FfC44680c03dC18ab0972b2a96A20d82335";
 
   const abiExample = `[
   {
@@ -90,7 +90,7 @@ contract DeployMONARA is Script {
 
   const interactionExample = `import { useContractWrite, useContractRead } from 'wagmi';
 
-const MONARA_ADDRESS = '0xd181dF3D2E8B8AB21bd49EFAf655a3AeFdd7c459';
+const MONARA_ADDRESS = '0xa7793FfC44680c03dC18ab0972b2a96A20d82335';
 
 // Mint Neural Genesis (0.1 MON)
 const { write: mintNeural } = useContractWrite({

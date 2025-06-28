@@ -77,47 +77,59 @@ function GalleryPage() {
       setError(null);
 
       const totalSupply = contractStats.totalSupply;
+      console.log(`📊 Loading gallery with ${totalSupply} tokens`);
+      
       if (totalSupply === 0) {
+        console.log('🔍 No tokens minted yet, showing empty gallery');
         setNfts([]);
         setFilteredNfts([]);
         setLoading(false);
         return;
       }
 
-      // Her tokenId için metadata fetch
+      // Sadece minted olan token'lar için metadata fetch
       const nftPromises = [];
       for (let i = 1; i <= totalSupply; i++) {
-        nftPromises.push(fetch(`/api/nft/${i}/metadata`).then(async (res) => {
-          if (!res.ok) throw new Error(`Metadata fetch failed for token ${i}`);
-          const data = await res.json();
-          return {
-            tokenId: i,
-            name: data.name,
-            owner: data.properties?.owner || '',
-            image: data.image,
-            animation_url: data.animation_url,
-            external_url: data.external_url,
-            stage: data.attributes?.find((a:any) => a.trait_type === 'Evolution Stage')?.value || '',
-            genesis_type: data.attributes?.find((a:any) => a.trait_type === 'Genesis Type')?.value === 'Quantum' ? 'Quantum' : 'Neural',
-            rarity_score: data.attributes?.find((a:any) => a.trait_type === 'Rarity Score')?.value || 0,
-            age_days: data.attributes?.find((a:any) => a.trait_type === 'Age (Days)')?.value || 0,
-            traits: {
-              geometry: data.attributes?.find((a:any) => a.trait_type === 'Core Geometry')?.value || '',
-              environment: data.attributes?.find((a:any) => a.trait_type === 'Environment')?.value || '',
-              evolution_stage: data.attributes?.find((a:any) => a.trait_type === 'Evolution Stage')?.value || '',
-            },
-          };
-        }).catch((err) => {
-          console.error(err);
-          return null;
-        }));
+        nftPromises.push(
+          fetch(`/api/nft/${i}/metadata`)
+            .then(async (res) => {
+              if (!res.ok) {
+                console.warn(`⚠️ Metadata fetch failed for token ${i}: ${res.status}`);
+                return null;
+              }
+              const data = await res.json();
+              
+              return {
+                tokenId: i,
+                name: data.name,
+                owner: data.properties?.owner || data.owner || '',
+                image: data.image,
+                animation_url: data.animation_url,
+                external_url: data.external_url,
+                stage: data.attributes?.find((a:any) => a.trait_type === 'Evolution Stage')?.value || 'Genesis',
+                genesis_type: data.attributes?.find((a:any) => a.trait_type === 'Genesis Type')?.value === 'Quantum' ? 'Quantum' : 'Neural',
+                rarity_score: data.attributes?.find((a:any) => a.trait_type === 'Rarity Score')?.value || 100,
+                age_days: data.attributes?.find((a:any) => a.trait_type === 'Age (Days)')?.value || 0,
+                traits: {
+                  geometry: data.attributes?.find((a:any) => a.trait_type === 'Core Geometry')?.value || 'Neural Web',
+                  environment: data.attributes?.find((a:any) => a.trait_type === 'Environment')?.value || 'Cyberspace',
+                  evolution_stage: data.attributes?.find((a:any) => a.trait_type === 'Evolution Stage')?.value || 'Genesis',
+                },
+              };
+            })
+            .catch((err) => {
+              console.error(`❌ Error loading token ${i}:`, err);
+              return null;
+            })
+        );
       }
 
       const loadedNfts = (await Promise.all(nftPromises)).filter(Boolean) as NFTData[];
+      console.log(`✅ Loaded ${loadedNfts.length} NFTs successfully`);
       setNfts(loadedNfts);
     } catch (err: any) {
-      console.error('Failed to load NFTs:', err);
-      setError('Failed to load NFT collection');
+      console.error('💥 Failed to load NFTs:', err);
+      setError('Failed to load NFT collection. Please refresh the page.');
     } finally {
       setLoading(false);
     }

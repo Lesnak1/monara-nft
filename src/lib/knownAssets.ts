@@ -32,9 +32,9 @@ const getBaseURL = () => {
 
 // MONARA Collection Configuration
 export const MONARA_KNOWN_ASSET: KnownAsset = {
-  address: "0xd181dF3D2E8B8AB21bd49EFAf655a3AeFdd7c459",
-  name: "MONARA - Evolving Digital Beings",
-  description: "🧠 Revolutionary evolving NFTs on Monad Network. Each MONARA is a digital being that evolves through neural network visualizations, featuring on-chain SVG generation and dynamic traits that change over time.",
+  address: '0xa7793FfC44680c03dC18ab0972b2a96A20d82335',
+  name: 'MONARA - Evolving Digital Beings',
+  description: '🧠 Revolutionary evolving NFTs on Monad Network. Each MONARA is a digital being that evolves through neural network visualizations, featuring on-chain SVG generation and dynamic traits that change over time.',
   image: `${getBaseURL()}/api/og`, // Use OG image endpoint
   website: getBaseURL(),
   verified: true,
@@ -48,6 +48,33 @@ export const MONARA_KNOWN_ASSET: KnownAsset = {
     royalties: 5 // 5% royalties
   }
 };
+
+export const MONAD_TESTNET_CONFIG = {
+  chainId: 10143,
+  name: 'Monad Testnet',
+  rpcUrl: 'https://testnet-rpc.monad.xyz',
+  explorerUrl: 'https://testnet.monadexplorer.com',
+  faucetUrl: 'https://faucet.monad.xyz',
+  nativeCurrency: {
+    name: 'MON',
+    symbol: 'MON',
+    decimals: 18,
+  },
+};
+
+/**
+ * Get explorer URL for a given contract address
+ */
+export function getExplorerUrl(address: string, type: 'address' | 'tx' = 'address'): string {
+  return `${MONAD_TESTNET_CONFIG.explorerUrl}/${type}/${address}`;
+}
+
+/**
+ * Get explorer URL for NFT token
+ */
+export function getNFTExplorerUrl(tokenId: string | number): string {
+  return getExplorerUrl(MONARA_KNOWN_ASSET.address, 'address');
+}
 
 // Sample NFT metadata for different evolution stages and rarities
 export const SAMPLE_MONARA_METADATA = {
