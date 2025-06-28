@@ -79,14 +79,14 @@ export default function HomePage() {
           <h1 className="text-6xl md:text-7xl font-bold mb-4 text-center tracking-wider">
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-400">MONA</span>
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-cyan-400">RA</span>
-          </h1>
+              </h1>
           
           <h2 className="text-2xl md:text-3xl font-semibold mb-4 text-center text-white/90">
-            Evolving Digital Beings on Monad
-          </h2>
+                Evolving Digital Beings on Monad
+              </h2>
           
           <p className="text-lg text-center text-white/70 max-w-3xl mb-8 px-4">
-            Experience the future of NFTs with Neural Networks that evolve, adapt, and transcend
+                Experience the future of NFTs with Neural Networks that evolve, adapt, and transcend 
             through computational stages on Monad's lightning-fast blockchain.
           </p>
 
@@ -189,9 +189,9 @@ export default function HomePage() {
             </h2>
             <p className="text-white/70 text-lg">
               Real-time minting progress and collection statistics
-            </p>
-          </div>
-          
+              </p>
+            </div>
+
           <div className="grid md:grid-cols-3 gap-6">
             {/* Minting Progress */}
             <div className="bg-gradient-to-br from-blue-500/10 to-purple-500/10 backdrop-blur rounded-2xl p-8 border border-blue-500/20">
@@ -201,7 +201,7 @@ export default function HomePage() {
                 </div>
                 <div className="text-white/80 font-medium text-lg">
                   Beings Created
-                </div>
+                  </div>
                 <div className="space-y-3">
                   <div className="w-full bg-white/10 rounded-full h-4 overflow-hidden">
                     <div 
@@ -290,8 +290,8 @@ export default function HomePage() {
               </div>
             </div>
           </div>
-        </div>
-      </section>
+            </div>
+          </section>
 
       {/* Vision */}
       <section className="w-full py-16 bg-gradient-to-b from-transparent via-[#0a0a1a] to-transparent">
@@ -299,7 +299,7 @@ export default function HomePage() {
           <div className="text-center mb-12">
             <h2 className="text-4xl font-bold gradient-text mb-4">
               Our Vision
-            </h2>
+              </h2>
           </div>
           <div className="grid md:grid-cols-2 gap-8">
             <div className="bg-white/5 backdrop-blur rounded-2xl p-8 border border-white/10">
@@ -322,8 +322,8 @@ export default function HomePage() {
               </p>
             </div>
           </div>
-        </div>
-      </section>
+            </div>
+          </section>
 
       {/* Features */}
       <section className="w-full py-16">
@@ -331,38 +331,38 @@ export default function HomePage() {
           <div className="text-center mb-12">
             <h2 className="text-4xl font-bold gradient-text mb-4">
               Key Features
-            </h2>
+              </h2>
             <p className="text-white/70 text-lg max-w-2xl mx-auto">
               What makes MONARA unique in the NFT space
-            </p>
-          </div>
+              </p>
+            </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <FeatureCard
+              <FeatureCard
               icon={<Activity className="w-6 h-6 text-purple-400" />}
               title="Dynamic Evolution"
               description="Each MONARA being evolves through 4 stages, developing unique neural pathways and visual characteristics over time."
-            />
-            <FeatureCard
+              />
+              <FeatureCard
               icon={<Zap className="w-6 h-6 text-emerald-400" />}
               title="On-Chain SVG"
               description="Fully on-chain generated SVG artwork that changes as your being evolves. No IPFS dependency, completely decentralized."
-            />
-            <FeatureCard
-              icon={<TrendingUp className="w-6 h-6 text-blue-400" />}
+              />
+              <FeatureCard
+                icon={<TrendingUp className="w-6 h-6 text-blue-400" />}
               title="Quantum Genesis"
               description="Premium genesis type with 8% mutation chance and enhanced evolutionary potential for unique trait development."
-            />
-            <FeatureCard
+              />
+              <FeatureCard
               icon={<Sparkles className="w-6 h-6 text-cyan-400" />}
               title="Neural Networks"
               description="Advanced algorithms determine evolution patterns, creating truly unique and unpredictable development paths."
-            />
-            <FeatureCard
+              />
+              <FeatureCard
               icon={<Users className="w-6 h-6 text-pink-400" />}
-              title="Community Driven"
+                title="Community Driven"
               description="Join a community of digital consciousness enthusiasts building the future of AI-powered NFTs."
-            />
-            <FeatureCard
+              />
+              <FeatureCard
               icon={<Shield className="w-6 h-6 text-orange-400" />}
               title="Provable Rarity"
               description="All traits and evolution paths are mathematically verifiable on-chain, ensuring true authenticity."
@@ -408,8 +408,8 @@ export default function HomePage() {
               <div className="text-sm text-yellow-400 font-medium">3+ months</div>
             </div>
           </div>
-        </div>
-      </section>
+            </div>
+          </section>
 
       {/* Final CTA */}
       <section className="w-full py-20">
@@ -434,10 +434,10 @@ export default function HomePage() {
                   <span className="text-lg">Learn More</span>
                 </button>
               </Link>
+              </div>
             </div>
-          </div>
         </div>
       </section>
-    </main>
+      </main>
   );
 }

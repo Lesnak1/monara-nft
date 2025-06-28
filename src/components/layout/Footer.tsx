@@ -186,7 +186,7 @@ export function Footer() {
             <div className="flex items-center space-x-2">
               <span className="text-sm text-white/60">Built by</span>
               <a
-                href="https://github.com/leknax"
+                href="https://github.com/Lesnak1"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="group flex items-center space-x-2 px-3 py-1.5 rounded-lg bg-gradient-to-r from-purple-600/20 to-pink-600/20 border border-purple-500/20 hover:border-purple-400/40 transition-all duration-200 hover:scale-105"

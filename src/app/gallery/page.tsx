@@ -275,7 +275,7 @@ function GalleryPage() {
             </h1>
           <p className="text-xl text-white/70 max-w-3xl mx-auto">
             Explore the evolving collection of Digital Beings on Monad Network. Each MONARA is unique and continues to evolve through neural computation.
-          </p>
+            </p>
         </div>
 
         {/* Stats */}
@@ -323,7 +323,7 @@ function GalleryPage() {
                     value={selectedStage}
                     onChange={(e) => setSelectedStage(e.target.value)}
               className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-            >
+                  >
               {EVOLUTION_STAGES.map(stage => (
                 <option key={stage} value={stage} className="bg-gray-900 text-white">
                   {stage} {stage !== 'All' && 'Stage'}
@@ -349,7 +349,7 @@ function GalleryPage() {
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
               className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-            >
+                  >
               {SORT_OPTIONS.map(option => (
                 <option key={option.value} value={option.value} className="bg-gray-900 text-white">
                   {option.label}
@@ -421,7 +421,7 @@ function GalleryPage() {
               <Link
                   href="/mint" 
                 className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold rounded-xl transition-all duration-200 hover:scale-105"
-              >
+                >
                 <Sparkles className="w-5 h-5 mr-2" />
                 Mint First MONARA
               </Link>

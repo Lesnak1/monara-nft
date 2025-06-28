@@ -9,6 +9,7 @@ import NFTPreview from './NFTPreview';
 import { useMonanimalContract } from '@/hooks/useMonanimalContract';
 import { useNetwork } from '@/hooks/useNetwork';
 import { NetworkSwitcher } from '@/components/NetworkSwitcher';
+import { AuthorizationGuide } from '@/components/AuthorizationGuide';
 
 const TRAIT_OPTIONS = {
   coreGeometry: ['Circle', 'Diamond', 'Hexagon', 'Octagon', 'Star', 'Triangle', 'Pentagon', 'Cross'],
@@ -75,6 +76,10 @@ export default function MintComponent() {
   const handleMint = useCallback(async () => {
     if (!isConnected || !address) {
       console.log('❌ Wallet not connected');
+      setMintState(prev => ({
+        ...prev,
+        error: 'Please connect your wallet first'
+      }));
       return;
     }
     
@@ -96,7 +101,7 @@ export default function MintComponent() {
 
       // Basic validation
       if (!contractStats.isContractReady) {
-        throw new Error('Contract not ready. Please wait for contract to load.');
+        throw new Error('Contract not ready. Please wait for contract to load or refresh the page.');
       }
 
       if (contractStats.isPaused) {
@@ -150,12 +155,19 @@ export default function MintComponent() {
       
       let errorMessage = 'Minting failed';
       
-      if (error.message?.includes('User rejected') || error.message?.includes('rejected')) {
+      // Handle specific MetaMask/wallet errors
+      if (error.message?.includes('unauthorized') || error.message?.includes('not been authorized')) {
+        errorMessage = 'Please authorize this website in your wallet. Go to MetaMask settings and add localhost:3000 to trusted sites.';
+      } else if (error.message?.includes('User rejected') || error.message?.includes('rejected')) {
         errorMessage = 'Transaction rejected by user';
       } else if (error.message?.includes('insufficient funds')) {
         errorMessage = 'Insufficient funds for transaction';
       } else if (error.message?.includes('gas')) {
         errorMessage = 'Gas estimation failed. Please try again.';
+      } else if (error.message?.includes('network')) {
+        errorMessage = 'Network connection issue. Please check your connection and try again.';
+      } else if (error.message?.includes('contract')) {
+        errorMessage = 'Contract interaction failed. Please refresh the page and try again.';
       } else if (error.message) {
         errorMessage = error.message.substring(0, 200);
       }
@@ -442,6 +454,35 @@ export default function MintComponent() {
               </div>
             )}
           </div>
+
+          {/* Error Display */}
+          {mintState.error && (
+            <div className="mb-6">
+              {mintState.error.includes('authorize') || mintState.error.includes('unauthorized') ? (
+                <AuthorizationGuide />
+              ) : (
+                <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4">
+                  <div className="flex items-center space-x-2">
+                    <Info className="w-5 h-5 text-red-400 flex-shrink-0" />
+                    <p className="text-red-300 text-sm">{mintState.error}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Success Display */}
+          {mintState.success && (
+            <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4 mb-6">
+              <div className="flex items-center space-x-2">
+                <Sparkles className="w-5 h-5 text-green-400 flex-shrink-0" />
+                <p className="text-green-300 text-sm">
+                  {selectedType === 'neural' ? 'Neural' : 'Quantum'} Genesis successfully minted! 
+                  Your digital being has been born.
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Mint Button */}
           <div className="space-y-4">

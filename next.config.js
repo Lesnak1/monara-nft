@@ -27,13 +27,14 @@ const nextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-eval' 'unsafe-inline' chrome-extension:",
+              "script-src 'self' 'unsafe-eval' 'unsafe-inline' chrome-extension: moz-extension:",
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' blob: data: https:",
-              "connect-src 'self' https://*.alchemy.com https://*.infura.io wss://*.alchemy.com chrome-extension:",
-              "frame-src 'self' chrome-extension:",
+              "connect-src 'self' https://*.alchemy.com https://*.infura.io wss://*.alchemy.com chrome-extension: moz-extension: https://testnet-rpc.monad.xyz wss://testnet-rpc.monad.xyz",
+              "frame-src 'self' chrome-extension: moz-extension:",
               "object-src 'none'",
               "base-uri 'self'",
+              "frame-ancestors 'self' chrome-extension: moz-extension:",
             ].join('; '),
           },
           {
@@ -43,6 +44,18 @@ const nextConfig = {
           {
             key: 'X-Content-Type-Options',
             value: 'nosniff',
+          },
+          {
+            key: 'Access-Control-Allow-Origin',
+            value: '*',
+          },
+          {
+            key: 'Access-Control-Allow-Methods',
+            value: 'GET, POST, PUT, DELETE, OPTIONS',
+          },
+          {
+            key: 'Access-Control-Allow-Headers',
+            value: 'Content-Type, Authorization',
           },
         ],
       },
