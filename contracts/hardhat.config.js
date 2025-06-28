@@ -1,10 +1,8 @@
 require("@nomicfoundation/hardhat-toolbox");
 require("dotenv").config();
 
-// Environment variables with fallbacks
-const PRIVATE_KEY = process.env.PRIVATE_KEY 
-  ? (process.env.PRIVATE_KEY.startsWith('0x') ? process.env.PRIVATE_KEY : '0x' + process.env.PRIVATE_KEY)
-  : "0x0000000000000000000000000000000000000000000000000000000000000001";
+// Environment variables with fallbacks - using hardhat test key for development
+const PRIVATE_KEY = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"; // Hardhat account #0
 const MONAD_RPC_URL = process.env.MONAD_TESTNET_RPC_URL || "https://testnet-rpc.monad.xyz";
 
 /** @type import('hardhat/config').HardhatUserConfig */
@@ -30,9 +28,7 @@ module.exports = {
     monadTestnet: {
       url: MONAD_RPC_URL,
       chainId: 10143, // Monad Testnet
-      accounts: PRIVATE_KEY !== "0x0000000000000000000000000000000000000000000000000000000000000001" 
-        ? [PRIVATE_KEY] 
-        : [],
+      accounts: [PRIVATE_KEY],
       gas: 20000000, // 20M gas limit
       gasPrice: 50000000000, // 50 gwei (higher for Monad)
       timeout: 60000, // 60 seconds
@@ -42,10 +38,7 @@ module.exports = {
     },
     monadMainnet: {
       url: process.env.MONAD_MAINNET_RPC_URL || "https://mainnet-rpc.monad.xyz",
-      accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : {
-        mnemonic: "test test test test test test test test test test test junk",
-        count: 10,
-      },
+      accounts: [PRIVATE_KEY],
       chainId: 1, // Henüz belirlenmemiş, placeholder
       gasPrice: "auto",
       gas: "auto",

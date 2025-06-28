@@ -11,6 +11,7 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 import "./libraries/NeuralRenderer.sol";
 import "./libraries/GeometryLib.sol";
 import "./libraries/ColorLib.sol";
+import "./libraries/Base64.sol";
 
 /**
  * @title MONARA - Evolving Digital Beings on Monad Network
@@ -345,112 +346,164 @@ contract MONARA is ERC721, ERC721Enumerable, Ownable, ReentrancyGuard, Pausable,
         DigitalBeing memory being = digitalBeings[tokenId];
         uint8 evolutionStage = getEvolutionStage(tokenId);
         
+        string memory traits = _buildTraits(being, evolutionStage, tokenId);
+        uint256 rarityScore = _calculateRarityScore(being);
+        
+        // Generate SVG and encode it to Base64
         string memory svg = generateSVG(tokenId);
-        string memory traits = _buildTraits(being, evolutionStage);
+        string memory imageURI = string(abi.encodePacked("data:image/svg+xml;base64,", Base64.encode(bytes(svg))));
         
-        return string(abi.encodePacked(
+        // Build metadata in parts to avoid stack overflow
+        string memory part1 = string(abi.encodePacked(
             '{"name": "MONARA #', tokenId.toString(),
-            '", "description": "Digital beings that evolve through neural network visualizations on Monad Network. Each MONARA represents the mathematical beauty of parallel computation.",',
-            '"image": "data:image/svg+xml;base64,', _base64Encode(bytes(svg)),
-            '", "attributes": [', traits, ']}'
+            '", "description": "Evolving Digital Being on Monad Network. Stage: ', _getStageString(evolutionStage),
+            ' (', uint256(evolutionStage).toString(), '/4). Genesis Type: ', being.isQuantumGenesis ? 'Quantum Genesis' : 'Neural Genesis'
         ));
+        
+        string memory part2 = string(abi.encodePacked(
+            '. Rarity Score: ', rarityScore.toString(),
+            '. Each MONARA represents neural network visualizations.",',
+            ' "image": "', imageURI, '",'
+        ));
+        
+        string memory part3 = string(abi.encodePacked(
+            ' "animation_url": "', _getBaseURI(), '/api/nft/', tokenId.toString(), '/animation",',
+            ' "external_url": "', _getBaseURI(), '/nft/', tokenId.toString(), '",'
+        ));
+        
+        string memory part4 = string(abi.encodePacked(
+            ' "attributes": [', traits, '],',
+            ' "background_color": "1a1a2e",',
+            ' "properties": {"evolution_stage": ', uint256(evolutionStage).toString(),
+            ', "rarity_score": ', rarityScore.toString(),
+            ', "is_quantum": ', being.isQuantumGenesis ? 'true' : 'false',
+            ', "birth_timestamp": ', uint256(being.birthTimestamp).toString(), '}}'
+        ));
+        
+        return string(abi.encodePacked(part1, part2, part3, part4));
     }
 
     /**
-     * @dev Build the traits array for metadata
+     * @dev Build traits array for metadata
      */
-    function _buildTraits(DigitalBeing memory being, uint8 evolutionStage) private pure returns (string memory) {
-        string memory coreNames = "CircleDiamondHexagonOctagonStar    TrianglePentagonCross   ";
-        string memory pathwayNames = "LinearCurved SpiralFractalWave  ";
-        string memory particleNames = "Dots  SquaresTringlesDiamondStars Hexagon";
-        string memory densityNames = "SparsemediumDense Ultra ";
-        string memory auraNames = "Pulse ShimmrWave  StaticBurst GradintNone  ";
-        string memory envNames = "Void  MatrixCloudQuantmCyber ";
-        string memory stageNames = "InitlzProcessLearnTranscd";
+    function _buildTraits(DigitalBeing memory being, uint8 evolutionStage, uint256 tokenId) internal pure returns (string memory) {
+        string memory stageString = _getStageString(evolutionStage);
+        string memory coreGeometry = _getCoreGeometry(being.coreGeometry);
+        string memory environment = _getEnvironment(being.environment);
         
-        return string(abi.encodePacked(
-            '{"trait_type": "Core Geometry", "value": "', _extractName(coreNames, being.coreGeometry, 7), '"},',
-            '{"trait_type": "Pathway Pattern", "value": "', _extractName(pathwayNames, being.pathwayPattern, 6), '"},',
-            '{"trait_type": "Particle System", "value": "', _extractName(particleNames, being.particleSystem, 8), '"},',
-            '{"trait_type": "Network Density", "value": "', _extractName(densityNames, being.networkDensity, 6), '"},',
-            '{"trait_type": "Processing Aura", "value": "', _extractName(auraNames, being.processingAura, 7), '"},',
-            '{"trait_type": "Environment", "value": "', _extractName(envNames, being.environment, 6), '"},',
-            '{"trait_type": "Evolution Stage", "value": "', _extractName(stageNames, evolutionStage - 1, 6), '"},',
-            '{"trait_type": "Genesis Type", "value": "', being.isQuantumGenesis ? "Quantum" : "Neural", '"},',
-            being.mutation > 0 ? string(abi.encodePacked('{"trait_type": "Mutation", "value": "Type ', uint256(being.mutation).toString(), '"},')) : '',
-            '{"trait_type": "Birth Timestamp", "value": ', uint256(being.birthTimestamp).toString(), '}'
+        // Build traits in parts to avoid stack overflow
+        string memory traits1 = string(abi.encodePacked(
+            '{"trait_type": "Evolution Stage", "value": "', stageString, '"},',
+            '{"trait_type": "Core Geometry", "value": "', coreGeometry, '"},',
+            '{"trait_type": "Genesis Type", "value": "', being.isQuantumGenesis ? 'Quantum' : 'Neural', '"},',
+            '{"trait_type": "Environment", "value": "', environment, '"}'
         ));
+        
+        string memory traits2 = string(abi.encodePacked(
+            ',{"trait_type": "Neural Density", "value": ', uint256(being.networkDensity % 100).toString(), '},',
+            '{"trait_type": "Consciousness Level", "value": ', uint256(being.processingAura % 10).toString(), '},',
+            '{"display_type": "boost_percentage", "trait_type": "Evolution Progress", "value": ', uint256(evolutionStage * 25).toString(), '}'
+        ));
+        
+        string memory traits3 = string(abi.encodePacked(
+            ',{"display_type": "number", "trait_type": "Rarity Score", "value": ', _calculateRarityScore(being).toString(), '},',
+            '{"display_type": "date", "trait_type": "Birth Date", "value": ', uint256(being.birthTimestamp).toString(), '},',
+            '{"display_type": "number", "trait_type": "Token ID", "value": ', tokenId.toString(), '}'
+        ));
+        
+        return string(abi.encodePacked(traits1, traits2, traits3));
     }
 
     /**
-     * @dev Extract trait name from packed string
+     * @dev Calculate rarity score based on traits
      */
-    function _extractName(string memory packedNames, uint256 index, uint256 nameLength) private pure returns (string memory) {
-        bytes memory names = bytes(packedNames);
-        bytes memory result = new bytes(nameLength);
+    function _calculateRarityScore(DigitalBeing memory being) internal pure returns (uint256) {
+        uint256 score = 100; // Base score
         
-        uint256 start = index * nameLength;
-        for (uint256 i = 0; i < nameLength; i++) {
-            if (start + i < names.length) {
-                result[i] = names[start + i];
-            }
+        // Quantum Genesis bonus
+        if (being.isQuantumGenesis) {
+            score += 50;
         }
         
-        return string(result);
+        // Neural density rarity
+        uint256 densityMod = being.networkDensity % 100;
+        if (densityMod > 90) score += 30;
+        else if (densityMod > 75) score += 20;
+        else if (densityMod > 50) score += 10;
+        
+        // Processing aura rarity
+        uint256 auraMod = being.processingAura % 10;
+        if (auraMod >= 8) score += 25;
+        else if (auraMod >= 6) score += 15;
+        else if (auraMod >= 4) score += 5;
+        
+        // Geometry rarity
+        uint256 geometryRarity = being.coreGeometry % 4;
+        if (geometryRarity == 3) score += 20; // Diamond (rarest)
+        else if (geometryRarity == 2) score += 15; // Star
+        else if (geometryRarity == 1) score += 10; // Hexagon
+        // Circle is common (no bonus)
+        
+        return score;
     }
 
     /**
-     * @dev Base64 encode function
+     * @dev Get stage string representation
      */
-    function _base64Encode(bytes memory data) private pure returns (string memory) {
-        if (data.length == 0) return "";
-        
-        string memory table = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-        uint256 encodedLen = 4 * ((data.length + 2) / 3);
-        string memory result = new string(encodedLen + 32);
-        
-        assembly {
-            let tablePtr := add(table, 1)
-            let resultPtr := add(result, 32)
-            
-            for {
-                let i := 0
-            } lt(i, mload(data)) {
-                i := add(i, 3)
-            } {
-                let input := and(mload(add(data, add(i, 32))), 0xffffff)
-                
-                let out := mload(add(tablePtr, and(shr(18, input), 0x3F)))
-                out := shl(8, out)
-                out := add(out, and(mload(add(tablePtr, and(shr(12, input), 0x3F))), 0xFF))
-                out := shl(8, out)
-                out := add(out, and(mload(add(tablePtr, and(shr(6, input), 0x3F))), 0xFF))
-                out := shl(8, out)
-                out := add(out, and(mload(add(tablePtr, and(input, 0x3F))), 0xFF))
-                out := shl(224, out)
-                
-                mstore(resultPtr, out)
-                resultPtr := add(resultPtr, 4)
-            }
-            
-            switch mod(mload(data), 3)
-            case 1 { mstore(sub(resultPtr, 2), shl(240, 0x3d3d)) }
-            case 2 { mstore(sub(resultPtr, 1), shl(248, 0x3d)) }
-        }
-        
-        return result;
+    function _getStageString(uint8 stage) internal pure returns (string memory) {
+        if (stage == 0) return "Spark";
+        if (stage == 1) return "Pulse";
+        if (stage == 2) return "Flow";
+        if (stage == 3) return "Nexus";
+        return "Transcendent";
     }
 
     /**
-     * @dev Override tokenURI to return fully on-chain metadata
+     * @dev Get core geometry string
+     */
+    function _getCoreGeometry(uint256 geometry) internal pure returns (string memory) {
+        uint256 geometryType = geometry % 4;
+        if (geometryType == 0) return "Circle";
+        if (geometryType == 1) return "Hexagon";
+        if (geometryType == 2) return "Star";
+        return "Diamond";
+    }
+
+    /**
+     * @dev Get environment string
+     */
+    function _getEnvironment(uint256 environment) internal pure returns (string memory) {
+        uint256 envType = environment % 4;
+        if (envType == 0) return "Matrix";
+        if (envType == 1) return "Quantum";
+        if (envType == 2) return "Cyber";
+        return "Void";
+    }
+
+    /**
+     * @dev Get base URI for metadata links
+     */
+    function _getBaseURI() internal pure returns (string memory) {
+        // Updated to point to deployed frontend domain
+        return "https://monara-nft.vercel.app";
+    }
+
+    /**
+     * @dev Returns the token URI for a given token ID
+     * @param tokenId The token ID to get the URI for
+     * @return The complete token URI with metadata
      */
     function tokenURI(uint256 tokenId) public view override returns (string memory) {
         if (_ownerOf(tokenId) == address(0)) revert TokenDoesNotExist();
         
         string memory metadata = generateMetadata(tokenId);
+        
+        // Encode metadata as base64 data URI for MetaMask compatibility
+        string memory json = Base64.encode(bytes(metadata));
+        
         return string(abi.encodePacked(
-            "data:application/json;base64,",
-            _base64Encode(bytes(metadata))
+            'data:application/json;base64,',
+            json
         ));
     }
 
