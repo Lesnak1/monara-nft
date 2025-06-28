@@ -116,7 +116,7 @@ const nextConfig: NextConfig = {
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com",
               "img-src 'self' blob: data: https:",
-              "connect-src 'self' https://*.monad.xyz https://monad-testnet.rpc.thirdweb.com https://*.alchemy.com https://*.infura.io wss://*.alchemy.com wss://*.infura.io",
+              "connect-src 'self' https://*.monad.xyz https://*.alchemy.com https://*.infura.io wss://*.alchemy.com wss://*.infura.io",
               "frame-src 'none'",
               "object-src 'none'",
               "base-uri 'self'",

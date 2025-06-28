@@ -3,6 +3,8 @@ import { Inter, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 import { Providers } from '@/components/providers/Providers';
 import { ClientWrapper } from '@/components/ClientWrapper';
+import { Header } from '@/components/layout/Header';
+import { Footer } from '@/components/layout/Footer';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -126,10 +128,14 @@ export default function RootLayout({
         <meta name="darkreader-lock" />
         <meta name="color-scheme" content="dark" />
       </head>
-      <body className="antialiased bg-slate-950" suppressHydrationWarning>
+      <body className="antialiased bg-slate-950 flex flex-col min-h-screen" suppressHydrationWarning>
         <Providers>
           <ClientWrapper>
+            <Header />
+            <main className="flex-1">
             {children}
+            </main>
+            <Footer />
           </ClientWrapper>
         </Providers>
       </body>

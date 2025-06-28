@@ -146,12 +146,12 @@ export const MONAD_RPC_URLS = [
 // Contract addresses for Monad Testnet (DEPLOYED)
 export const CONTRACT_ADDRESSES = {
   [MONAD_TESTNET_CHAIN_ID]: {
-    MONARA_NFT: '0xd181dF3D2E8B8AB21bd49EFAf655a3AeFdd7c459', // ✅ DEPLOYED - Monad Testnet
+    MONARA_NFT: '0xa7793FfC44680c03dC18ab0972b2a96A20d82335', // ✅ DEPLOYED - Monad Testnet
     MONARA_MARKETPLACE: '0x0000000000000000000000000000000000000000',
   },
   // Local development addresses
   31337: {
-    MONARA_NFT: '0xd181dF3D2E8B8AB21bd49EFAf655a3AeFdd7c459', // Use same address for local testing
+    MONARA_NFT: '0xa7793FfC44680c03dC18ab0972b2a96A20d82335', // Use same address for local testing
     MONARA_MARKETPLACE: '0x0000000000000000000000000000000000000000',
   },
 } as const; 

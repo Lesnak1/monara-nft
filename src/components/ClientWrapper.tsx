@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Background } from './Background';
+import MonadCursor from './MonadCursor';
 
 interface ClientWrapperProps {
   children: React.ReactNode;
@@ -43,6 +44,7 @@ export function ClientWrapper({ children }: ClientWrapperProps) {
 
   return (
     <>
+      <MonadCursor />
       <Background />
       <div className="relative z-10 min-h-screen flex flex-col text-white">
         {children}

@@ -1,14 +1,15 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { 
   useAccount, 
   useReadContract, 
   useWriteContract, 
   useWaitForTransactionReceipt,
-  useBalance 
+  useBalance,
+  useWatchContractEvent
 } from 'wagmi';
-import { parseEther, formatEther } from 'viem';
+import { parseEther, formatEther, isAddress } from 'viem';
 import { CONTRACT_ADDRESSES, MONAD_TESTNET_CHAIN_ID } from '@/lib/wagmi';
 
 // Gerçek MONARA contract ABI (genişletilmiş)
@@ -122,7 +123,7 @@ const MONARA_ABI = [
 // Deploy edilen contract address - MONARA Monad Testnet
 const MONARA_CONTRACT_ADDRESS = (process.env.NEXT_PUBLIC_MONARA_CONTRACT_ADDRESS || 
   CONTRACT_ADDRESSES[MONAD_TESTNET_CHAIN_ID].MONARA_NFT ||
-  '0xd181dF3D2E8B8AB21bd49EFAf655a3AeFdd7c459') as `0x${string}`;
+  '0xa7793FfC44680c03dC18ab0972b2a96A20d82335') as `0x${string}`;
 
   // Debug contract address source
   console.log('🏭 Contract Configuration:', {
@@ -130,12 +131,12 @@ const MONARA_CONTRACT_ADDRESS = (process.env.NEXT_PUBLIC_MONARA_CONTRACT_ADDRESS
     fromWagmiConfig: CONTRACT_ADDRESSES[MONAD_TESTNET_CHAIN_ID].MONARA_NFT,
     finalAddress: MONARA_CONTRACT_ADDRESS,
     isValid: MONARA_CONTRACT_ADDRESS.length === 42,
-    isDeployedAddress: MONARA_CONTRACT_ADDRESS === '0xd181dF3D2E8B8AB21bd49EFAf655a3AeFdd7c459',
+      isDeployedAddress: MONARA_CONTRACT_ADDRESS === '0xa7793FfC44680c03dC18ab0972b2a96A20d82335',
     chainId: process.env.NEXT_PUBLIC_CHAIN_ID || '10143'
   });
 
   // Force contract ready if we have the correct deployed address
-  const isKnownDeployedAddress = MONARA_CONTRACT_ADDRESS === '0xd181dF3D2E8B8AB21bd49EFAf655a3AeFdd7c459';
+  const isKnownDeployedAddress = MONARA_CONTRACT_ADDRESS === '0xa7793FfC44680c03dC18ab0972b2a96A20d82335';
 
 export interface ContractStats {
   totalSupply: number;
@@ -158,19 +159,30 @@ export interface ContractStats {
 export function useMonanimalContract() {
   const { address, isConnected } = useAccount();
   const [lastMintedTokenId, setLastMintedTokenId] = useState<number | null>(null);
+  const [statsRefreshTrigger, setStatsRefreshTrigger] = useState(0);
+
+  // Force refresh function
+  const refreshStats = useCallback(() => {
+    setStatsRefreshTrigger(prev => prev + 1);
+    console.log('🔄 Manually refreshing contract stats...');
+  }, []);
 
   // User balance
-  const { data: balance, error: balanceError } = useBalance({
+  const { data: balance, error: balanceError, refetch: refetchBalance } = useBalance({
     address,
     chainId: 10143, // Monad Testnet
   });
 
-  // Contract reads
-  const { data: totalSupply, error: totalSupplyError } = useReadContract({
+  // Contract reads with automatic refetch
+  const { data: totalSupply, error: totalSupplyError, refetch: refetchTotalSupply } = useReadContract({
     address: MONARA_CONTRACT_ADDRESS,
     abi: MONARA_ABI,
     functionName: 'totalSupply',
     chainId: 10143,
+    query: {
+      refetchInterval: 10000, // Refetch every 10 seconds
+      staleTime: 5000, // Consider data stale after 5 seconds
+    }
   });
 
   const { data: maxSupply, error: maxSupplyError } = useReadContract({
@@ -194,39 +206,50 @@ export function useMonanimalContract() {
     chainId: 10143,
   });
 
-  const { data: userBalance, error: userBalanceError } = useReadContract({
+  const { data: userBalance, error: userBalanceError, refetch: refetchUserBalance } = useReadContract({
     address: MONARA_CONTRACT_ADDRESS,
     abi: MONARA_ABI,
     functionName: 'balanceOf',
     args: address ? [address] : undefined,
     query: {
       enabled: !!address,
+      refetchInterval: 10000, // Refetch every 10 seconds
     },
     chainId: 10143,
   });
 
   // Additional contract status checks
-  const { data: mintingActive } = useReadContract({
+  const { data: mintingActive, refetch: refetchMintingActive } = useReadContract({
     address: MONARA_CONTRACT_ADDRESS,
     abi: MONARA_ABI,
     functionName: 'mintingActive',
     chainId: 10143,
+    query: {
+      refetchInterval: 30000, // Refetch every 30 seconds
+    }
   });
 
-  const { data: isPaused } = useReadContract({
+  const { data: isPaused, refetch: refetchPaused } = useReadContract({
     address: MONARA_CONTRACT_ADDRESS,
     abi: MONARA_ABI,
     functionName: 'paused',
     chainId: 10143,
+    query: {
+      refetchInterval: 30000, // Refetch every 30 seconds
+    }
   });
 
-  const { data: currentTokenId } = useReadContract({
+  const { data: currentTokenId, refetch: refetchCurrentTokenId } = useReadContract({
     address: MONARA_CONTRACT_ADDRESS,
     abi: MONARA_ABI,
     functionName: 'currentTokenId',
     chainId: 10143,
+    query: {
+      refetchInterval: 5000, // Refetch every 5 seconds
+    }
   });
 
+  // Rate limit info
   const { data: rateLimitInfo } = useReadContract({
     address: MONARA_CONTRACT_ADDRESS,
     abi: MONARA_ABI,
@@ -234,48 +257,134 @@ export function useMonanimalContract() {
     args: address ? [address] : undefined,
     query: {
       enabled: !!address,
+      refetchInterval: 15000, // Refetch every 15 seconds
     },
     chainId: 10143,
   });
 
-  // Contract writes
+  // Listen to DigitalBeingCreated events for real-time updates
+  useWatchContractEvent({
+    address: MONARA_CONTRACT_ADDRESS,
+    abi: MONARA_ABI,
+    eventName: 'DigitalBeingCreated',
+    chainId: 10143,
+    onLogs: (logs) => {
+      console.log('🎉 New MONARA minted!', logs);
+      
+      // Extract token ID from the latest log
+      if (logs.length > 0) {
+        const latestLog = logs[logs.length - 1] as any;
+        if (latestLog.args?.tokenId) {
+          const newTokenId = Number(latestLog.args.tokenId);
+          setLastMintedTokenId(newTokenId);
+          console.log(`✨ MONARA #${newTokenId} has been born!`);
+        }
+      }
+
+      // Refresh all relevant data immediately
+      setTimeout(() => {
+        refetchTotalSupply();
+        refetchCurrentTokenId();
+        refetchUserBalance();
+        refetchBalance();
+        refreshStats();
+      }, 1000); // Small delay to ensure blockchain state is updated
+    },
+  });
+
+  // Listen to Transfer events for ownership changes
+  useWatchContractEvent({
+    address: MONARA_CONTRACT_ADDRESS,
+    abi: MONARA_ABI,
+    eventName: 'Transfer',
+    chainId: 10143,
+    onLogs: (logs) => {
+      console.log('🔄 Transfer event detected', logs);
+      
+      // Check if user is involved in any transfer
+      const userInvolved = logs.some(log => {
+        const logWithArgs = log as any;
+        return (logWithArgs.args?.from === address || logWithArgs.args?.to === address);
+      });
+      
+      if (userInvolved) {
+        console.log('👤 User involved in transfer, refreshing balance...');
+        setTimeout(() => {
+          refetchUserBalance();
+          refetchBalance();
+        }, 1000);
+      }
+    },
+  });
+
+  // Mint functions
   const {
-    data: mintData,
-    writeContract: mintWrite,
+    data: mintHash,
     isPending: isMintLoading,
+    writeContract: mintWrite,
     error: mintError,
+    reset: resetMint
   } = useWriteContract();
 
   const {
-    data: quantumData,
-    writeContract: quantumWrite,
+    data: quantumHash,
     isPending: isQuantumLoading,
+    writeContract: quantumWrite,
     error: quantumError,
+    reset: resetQuantum
   } = useWriteContract();
 
-  // Transaction confirmations
-  const { isLoading: isMintConfirming } = useWaitForTransactionReceipt({
-    hash: mintData,
+  // Wait for transaction confirmations
+  const { isLoading: isMintConfirming, isSuccess: isMintSuccess } = useWaitForTransactionReceipt({
+    hash: mintHash,
   });
 
-  const { isLoading: isQuantumConfirming } = useWaitForTransactionReceipt({
-    hash: quantumData,
+  const { isLoading: isQuantumConfirming, isSuccess: isQuantumSuccess } = useWaitForTransactionReceipt({
+    hash: quantumHash,
   });
 
-  // Contract readiness check
-  const hasValidAddress = MONARA_CONTRACT_ADDRESS && 
-    MONARA_CONTRACT_ADDRESS !== '0x0000000000000000000000000000000000000000' &&
-    MONARA_CONTRACT_ADDRESS.length === 42;
-  
-  const hasContractData = totalSupply !== undefined || maxSupply !== undefined || mintPrice !== undefined;
+  // Auto-refresh stats when transactions complete
+  useEffect(() => {
+    if (isMintSuccess || isQuantumSuccess) {
+      console.log('✅ Transaction confirmed, refreshing stats...');
+      setTimeout(() => {
+        refetchTotalSupply();
+        refetchCurrentTokenId();
+        refetchUserBalance();
+        refetchBalance();
+        refreshStats();
+      }, 2000);
+    }
+  }, [isMintSuccess, isQuantumSuccess, refetchTotalSupply, refetchCurrentTokenId, refetchUserBalance, refetchBalance, refreshStats]);
+
+  // Auto-refresh on statsRefreshTrigger change
+  useEffect(() => {
+    if (statsRefreshTrigger > 0) {
+      refetchTotalSupply();
+      refetchCurrentTokenId();
+      refetchUserBalance();
+      refetchBalance();
+      refetchMintingActive();
+      refetchPaused();
+    }
+  }, [statsRefreshTrigger, refetchTotalSupply, refetchCurrentTokenId, refetchUserBalance, refetchBalance, refetchMintingActive, refetchPaused]);
+
+  // Contract validation
+  const hasValidAddress = isAddress(MONARA_CONTRACT_ADDRESS);
+  const hasContractData = !!(totalSupply || maxSupply || mintPrice);
   const hasNoMajorErrors = !totalSupplyError && !maxSupplyError && !mintPriceError;
-  const isContractActive = mintingActive !== false && !isPaused; // Default to true if undefined
+  const isContractActive = hasValidAddress && hasContractData && hasNoMajorErrors;
   
-  console.log('🔍 Contract Readiness Check:', {
+  // Log contract status for debugging
+  console.log('📊 Contract Connection Status:', {
+    address: MONARA_CONTRACT_ADDRESS,
     hasValidAddress,
     hasContractData,
     hasNoMajorErrors,
     isContractActive,
+    isKnownDeployedAddress,
+    totalSupply: totalSupply?.toString(),
+    currentTokenId: currentTokenId?.toString(),
     mintingActive,
     isPaused,
     totalSupplyError: totalSupplyError?.message,
@@ -333,7 +442,8 @@ export function useMonanimalContract() {
     isPaused: contractStats.isPaused,
     currentTokenId: contractStats.currentTokenId,
     rateLimitInfo: contractStats.rateLimitInfo,
-    errors: contractErrors
+    errors: contractErrors,
+    lastMintedTokenId
   });
 
   // Log any contract errors
@@ -477,14 +587,14 @@ export function useMonanimalContract() {
       
       const response = await fetch('https://testnet-rpc.monad.xyz', {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           jsonrpc: '2.0',
           method: 'eth_getBalance',
           params: [address, 'latest'],
-          id: 1
+          id: 1,
         }),
       });
 
@@ -493,97 +603,51 @@ export function useMonanimalContract() {
         if (data.result) {
           const balanceWei = BigInt(data.result);
           const balanceFormatted = formatEther(balanceWei);
-          console.log(`✅ Simple RPC balance fetch successful: ${balanceFormatted} MON`);
+          console.log(`✅ Direct RPC balance fetch successful: ${balanceFormatted} MON`);
           return balanceWei;
         }
       }
     } catch (rpcError: any) {
-      console.warn('⚠️ Simple RPC fetch failed:', rpcError.message);
+      console.warn('⚠️ Direct RPC balance fetch failed:', rpcError.message);
     }
 
-    // Method 3: Return null and let optimistic UI handle it
-    console.log('❌ All balance fetch methods failed, returning null');
+    console.error('❌ All balance fetch methods failed');
     return null;
   };
 
-  // Enhanced balance checker with comprehensive fallback support
+  // Enhanced balance check with all fallback methods
   const hasEnoughBalanceEnhanced = async (forQuantum = false): Promise<boolean> => {
-    console.log('🔍 Enhanced balance check started:', { forQuantum, connected: isConnected, address });
+    console.log('🔍 Starting enhanced balance check...');
     
-    // Step 1: Try wagmi hook balance first
+    const requiredPrice = forQuantum ? contractStats.quantumPrice : contractStats.mintPrice;
+    const requiredAmount = parseEther(requiredPrice);
+    
+    // Method 1: Try wagmi balance
     if (balance?.value) {
-      try {
-        const result = hasEnoughBalance(forQuantum);
-        if (result) {
-          console.log('✅ Balance check passed via wagmi hook');
-          return true;
-        }
-        console.log('📊 Wagmi balance insufficient, trying manual methods...');
-      } catch (wagmiError: any) {
-        console.warn('⚠️ Wagmi balance check error:', wagmiError.message);
-      }
-    } else {
-      console.log('📊 No wagmi balance data, trying manual fetch...');
-    }
-
-    // Step 2: Manual balance fetch with comprehensive error handling
-    try {
-      console.log('🔄 Attempting manual balance fetch...');
-      const manualBalance = await fetchBalanceManually();
+      const hasEnough = balance.value >= requiredAmount;
+      console.log('💰 Wagmi balance check:', {
+        balance: formatEther(balance.value),
+        required: requiredPrice,
+        hasEnough
+      });
       
-      if (manualBalance !== null && manualBalance !== undefined) {
-        const requiredPrice = forQuantum ? contractStats.quantumPrice : contractStats.mintPrice;
-        const requiredAmount = parseEther(requiredPrice);
-        const hasEnough = manualBalance >= requiredAmount;
-        
-        console.log('📊 Manual balance check result:', {
-          manualBalance: formatEther(manualBalance),
-          requiredPrice,
-          hasEnough,
-          balanceWei: manualBalance.toString(),
-          requiredWei: requiredAmount.toString()
-        });
-        
-        return hasEnough;
-      } else {
-        console.log('❌ Manual balance fetch returned null');
-      }
-    } catch (manualError: any) {
-      console.warn('⚠️ Manual balance fetch error:', manualError.message);
-      
-      // Step 3: Try simplified balance check as last resort
-      try {
-        console.log('🔄 Trying simplified balance check as fallback...');
-        
-        // Use window.ethereum directly if available
-        if (typeof window !== 'undefined' && window.ethereum && address) {
-          const result = await window.ethereum.request({
-            method: 'eth_getBalance',
-            params: [address, 'latest'],
-          });
-          
-          if (result) {
-            const simplifiedBalance = BigInt(result as string);
-            const requiredPrice = forQuantum ? contractStats.quantumPrice : contractStats.mintPrice;
-            const requiredAmount = parseEther(requiredPrice);
-            const hasEnough = simplifiedBalance >= requiredAmount;
-            
-            console.log('📊 Simplified balance check result:', {
-              balance: formatEther(simplifiedBalance),
-              required: requiredPrice,
-              hasEnough
-            });
-            
-            return hasEnough;
-          }
-        }
-      } catch (simplifiedError: any) {
-        console.warn('⚠️ Simplified balance check also failed:', simplifiedError.message);
-      }
+      if (hasEnough) return true;
     }
-
-    // Don't fail completely - let optimistic UI handle it
-    console.log('⚠️ All balance check methods failed, returning false but allowing optimistic proceed');
+    
+    // Method 2: Try manual fetch
+    const manualBalance = await fetchBalanceManually();
+    if (manualBalance) {
+      const hasEnough = manualBalance >= requiredAmount;
+      console.log('🔄 Manual balance check:', {
+        balance: formatEther(manualBalance),
+        required: requiredPrice,
+        hasEnough
+      });
+      
+      return hasEnough;
+    }
+    
+    console.warn('⚠️ Could not verify balance through any method');
     return false;
   };
 
@@ -591,66 +655,57 @@ export function useMonanimalContract() {
   const getMintStatus = () => {
     if (isMintLoading || isMintConfirming) return 'minting';
     if (isQuantumLoading || isQuantumConfirming) return 'quantum_minting';
-    if (mintError || quantumError) return 'error';
-    if (mintData && !isMintConfirming) return 'success';
-    if (quantumData && !isQuantumConfirming) return 'quantum_success';
+    if (isMintSuccess) return 'mint_success';
+    if (isQuantumSuccess) return 'quantum_success';
     return 'idle';
   };
 
-  // Admin function to enable minting
-  const {
-    writeContract: enableMintingWrite,
-    isPending: isEnablingMinting,
-    error: enableMintingError,
-  } = useWriteContract();
-
+  // Enable minting helper
   const enableMinting = () => {
-    enableMintingWrite({
-      address: MONARA_CONTRACT_ADDRESS,
-      abi: MONARA_ABI,
-      functionName: 'setMintingActive',
-      args: [true],
-    });
+    resetMint();
+    resetQuantum();
   };
 
   return {
     // Contract data
     contractStats,
+    lastMintedTokenId,
     
     // User data
-    userBalance: contractStats.userBalance,
     walletBalance: balance ? formatEther(balance.value) : '0',
+    rawBalance: balance,
+    
+    // Balance checking
     hasEnoughBalance,
     checkBalanceAlternative,
     hasEnoughBalanceEnhanced,
     fetchBalanceManually,
     
-    // Mint functions
+    // Minting functions
     mint,
     quantumGenesis,
     
-    // Transaction states
+    // Transaction status
     isMintLoading: isMintLoading || isMintConfirming,
     isQuantumLoading: isQuantumLoading || isQuantumConfirming,
+    isMintSuccess,
+    isQuantumSuccess,
     mintError,
     quantumError,
     getMintStatus,
-    
-    // Transaction data
-    lastMintTx: mintData || quantumData,
-    lastMintedTokenId,
-    
-    // Utils
-    isConnected,
-    address,
-    
-    // Debug
-    rawBalance: balance,
-    balanceError,
-    
-    // Admin functions
     enableMinting,
-    isEnablingMinting,
-    enableMintingError,
+    
+    // Manual refresh
+    refreshStats,
+    
+    // Individual refetch functions
+    refetchBalance,
+    refetchTotalSupply,
+    refetchUserBalance,
+    refetchCurrentTokenId,
+    
+    // Errors
+    balanceError,
+    contractErrors
   };
 } 

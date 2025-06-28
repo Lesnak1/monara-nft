@@ -1,14 +1,11 @@
 'use client';
 
-import { Header } from '@/components/layout/Header';
 import Link from 'next/link';
 
 export default function NotFound() {
   return (
     <div className="min-h-screen">
-      <Header />
-      
-      <main className="relative">
+      <div className="relative">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-32">
           <div className="text-center">
             {/* Animated 404 */}
@@ -68,7 +65,7 @@ export default function NotFound() {
             </div>
           </div>
         </div>
-      </main>
+      </div>
     </div>
   );
 } 

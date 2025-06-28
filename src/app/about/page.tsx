@@ -1,6 +1,6 @@
 'use client';
 
-import { Header } from '@/components/layout/Header';
+
 import { useMonadStats } from '@/hooks/useMonadStats';
 import { Activity, Zap, Users, TrendingUp, Sparkles, Shield } from 'lucide-react';
 import Link from 'next/link';
@@ -53,10 +53,7 @@ export default function AboutPage() {
   const { stats, isLoading } = useMonadStats();
 
   return (
-    <>
-      <Header />
-      
-      <main className="main-content">
+    <div className="main-content">
         <div className="w-full max-w-6xl mx-auto space-y-16">
           {/* Hero Section */}
           <section className="text-center space-y-8 fade-in">
@@ -386,7 +383,6 @@ export default function AboutPage() {
             </div>
           </section>
         </div>
-      </main>
-    </>
+        </div>
   );
 } 

@@ -1,282 +1,446 @@
 'use client';
 
-import { useState } from 'react';
-import { Header } from '@/components/layout/Header';
-import { useMonadStats } from '@/hooks/useMonadStats';
-import { FunnelIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { Background } from "@/components/Background";
+import { ClientWrapper } from "@/components/ClientWrapper";
+import { useMonanimalContract } from '@/hooks/useMonanimalContract';
+import { 
+  Search, 
+  Filter, 
+  Grid3X3, 
+  List, 
+  Sparkles, 
+  Zap, 
+  Activity, 
+  TrendingUp,
+  RefreshCw,
+  Eye,
+  ExternalLink
+} from 'lucide-react';
 
-// Gerçek Monad NFT koleksiyonu için placeholder data
-interface DigitalBeingData {
-  id: string;
+interface NFTData {
+  tokenId: number;
   name: string;
-  stage: string;
   owner: string;
-  price: string;
-  rarity: string;
   image: string;
-  blockMinted: number;
-  evolutionTime: string;
+  animation_url: string;
+  external_url: string;
+  stage: string;
+  genesis_type: 'Neural' | 'Quantum';
+  rarity_score: number;
+  age_days: number;
+  traits: {
+    geometry: string;
+    environment: string;
+    evolution_stage: string;
+  };
 }
 
-const sampleDigitalBeings: DigitalBeingData[] = [
-  {
-    id: '1',
-    name: 'MONARA Genesis #001',
-    stage: 'Nexus',
-    owner: '0xMonad...7f3a',
-    price: '0.25 MON',
-    rarity: 'Legendary',
-    image: '/placeholder-nft.png',
-    blockMinted: 23150000,
-    evolutionTime: '127 days'
-  },
-  {
-    id: '2', 
-    name: 'Neural Entity #042',
-    stage: 'Flow',
-    owner: '0xTest...8b2c',
-    price: '0.18 MON',
-    rarity: 'Epic',
-    image: '/placeholder-nft.png',
-    blockMinted: 23155000,
-    evolutionTime: '89 days'
-  },
-  {
-    id: '3',
-    name: 'Digital Consciousness #127',
-    stage: 'Pulse',
-    owner: '0xDev...4d5e',
-    price: '0.12 MON',
-    rarity: 'Rare',
-    image: '/placeholder-nft.png',
-    blockMinted: 23160000,
-    evolutionTime: '45 days'
-  },
-  {
-    id: '4',
-    name: 'Quantum Being #089',
-    stage: 'Spark',
-    owner: '0xUser...3a1b',
-    price: '0.08 MON',
-    rarity: 'Common',
-    image: '/placeholder-nft.png',
-    blockMinted: 23165000,
-    evolutionTime: '12 days'
-  }
+const EVOLUTION_STAGES = ['All', 'Spark', 'Pulse', 'Flow', 'Nexus'];
+const GENESIS_TYPES = ['All', 'Neural', 'Quantum'];
+const SORT_OPTIONS = [
+  { value: 'newest', label: 'Newest First' },
+  { value: 'oldest', label: 'Oldest First' },
+  { value: 'rarity_high', label: 'Highest Rarity' },
+  { value: 'rarity_low', label: 'Lowest Rarity' },
+  { value: 'token_id', label: 'Token ID' }
 ];
 
-function StatsCard({ title, value, change }: { title: string; value: string; change: string }) {
-  return (
-    <div className="card text-center group hover:scale-105 transition-all duration-300">
-      <div className="text-2xl font-bold text-white mb-2 group-hover:scale-110 transition-transform">
-        {value}
-      </div>
-      <div className="text-sm font-medium text-white/80 mb-2">
-        {title}
-      </div>
-      <div className="text-xs px-2 py-1 rounded-full bg-white/10 text-white/70">
-        {change}
-      </div>
-    </div>
-  );
-}
+function GalleryPage() {
+  const { 
+    contractStats, 
+    lastMintedTokenId, 
+    refreshStats 
+  } = useMonanimalContract();
+  
+  const [nfts, setNfts] = useState<NFTData[]>([]);
+  const [filteredNfts, setFilteredNfts] = useState<NFTData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Filter states
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedStage, setSelectedStage] = useState('All');
+  const [selectedType, setSelectedType] = useState('All');
+  const [sortBy, setSortBy] = useState('newest');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  
+  // Load NFTs from contract
+  useEffect(() => {
+    loadNFTs();
+  }, [contractStats.totalSupply, lastMintedTokenId]);
 
-function NFTCard({ nft }: { nft: DigitalBeingData }) {
+  const loadNFTs = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const totalSupply = contractStats.totalSupply;
+      if (totalSupply === 0) {
+        setNfts([]);
+        setFilteredNfts([]);
+        setLoading(false);
+        return;
+      }
+
+      // Her tokenId için metadata fetch
+      const nftPromises = [];
+      for (let i = 1; i <= totalSupply; i++) {
+        nftPromises.push(fetch(`/api/nft/${i}/metadata`).then(async (res) => {
+          if (!res.ok) throw new Error(`Metadata fetch failed for token ${i}`);
+          const data = await res.json();
+          return {
+            tokenId: i,
+            name: data.name,
+            owner: data.properties?.owner || '',
+            image: data.image,
+            animation_url: data.animation_url,
+            external_url: data.external_url,
+            stage: data.attributes?.find((a:any) => a.trait_type === 'Evolution Stage')?.value || '',
+            genesis_type: data.attributes?.find((a:any) => a.trait_type === 'Genesis Type')?.value === 'Quantum' ? 'Quantum' : 'Neural',
+            rarity_score: data.attributes?.find((a:any) => a.trait_type === 'Rarity Score')?.value || 0,
+            age_days: data.attributes?.find((a:any) => a.trait_type === 'Age (Days)')?.value || 0,
+            traits: {
+              geometry: data.attributes?.find((a:any) => a.trait_type === 'Core Geometry')?.value || '',
+              environment: data.attributes?.find((a:any) => a.trait_type === 'Environment')?.value || '',
+              evolution_stage: data.attributes?.find((a:any) => a.trait_type === 'Evolution Stage')?.value || '',
+            },
+          };
+        }).catch((err) => {
+          console.error(err);
+          return null;
+        }));
+      }
+
+      const loadedNfts = (await Promise.all(nftPromises)).filter(Boolean) as NFTData[];
+      setNfts(loadedNfts);
+    } catch (err: any) {
+      console.error('Failed to load NFTs:', err);
+      setError('Failed to load NFT collection');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Apply filters and sorting
+  useEffect(() => {
+    let filtered = [...nfts];
+
+    // Search filter
+    if (searchTerm) {
+      filtered = filtered.filter(nft => 
+        nft.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        nft.tokenId.toString().includes(searchTerm)
+      );
+    }
+
+    // Stage filter
+    if (selectedStage !== 'All') {
+      filtered = filtered.filter(nft => nft.stage === selectedStage);
+    }
+
+    // Type filter
+    if (selectedType !== 'All') {
+      filtered = filtered.filter(nft => nft.genesis_type === selectedType);
+    }
+
+    // Sorting
+    switch (sortBy) {
+      case 'newest':
+        filtered.sort((a, b) => b.tokenId - a.tokenId);
+        break;
+      case 'oldest':
+        filtered.sort((a, b) => a.tokenId - b.tokenId);
+        break;
+      case 'rarity_high':
+        filtered.sort((a, b) => b.rarity_score - a.rarity_score);
+        break;
+      case 'rarity_low':
+        filtered.sort((a, b) => a.rarity_score - b.rarity_score);
+        break;
+      case 'token_id':
+        filtered.sort((a, b) => a.tokenId - b.tokenId);
+        break;
+    }
+
+    setFilteredNfts(filtered);
+  }, [nfts, searchTerm, selectedStage, selectedType, sortBy]);
+
   const getStageColor = (stage: string) => {
     switch (stage) {
-      case 'Nexus': return 'text-emerald-400 bg-emerald-400/10';
-      case 'Flow': return 'text-purple-400 bg-purple-400/10';
-      case 'Pulse': return 'text-blue-400 bg-blue-400/10';
-      case 'Spark': return 'text-orange-400 bg-orange-400/10';
-      default: return 'text-purple-400 bg-purple-400/10';
+      case 'Nexus': return 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20';
+      case 'Flow': return 'text-purple-400 bg-purple-400/10 border-purple-400/20';
+      case 'Pulse': return 'text-blue-400 bg-blue-400/10 border-blue-400/20';
+      case 'Spark': return 'text-orange-400 bg-orange-400/10 border-orange-400/20';
+      default: return 'text-gray-400 bg-gray-400/10 border-gray-400/20';
     }
   };
 
-  const getRarityColor = (rarity: string) => {
-    switch (rarity) {
-      case 'Legendary': return 'text-yellow-400 bg-yellow-400/10';
-      case 'Epic': return 'text-purple-400 bg-purple-400/10';
-      case 'Rare': return 'text-blue-400 bg-blue-400/10';
-      case 'Common': return 'text-gray-400 bg-gray-400/10';
-      default: return 'text-gray-400 bg-gray-400/10';
-    }
+  const getRarityColor = (score: number) => {
+    if (score >= 200) return 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20';
+    if (score >= 175) return 'text-purple-400 bg-purple-400/10 border-purple-400/20';
+    if (score >= 150) return 'text-blue-400 bg-blue-400/10 border-blue-400/20';
+    if (score >= 125) return 'text-green-400 bg-green-400/10 border-green-400/20';
+    return 'text-gray-400 bg-gray-400/10 border-gray-400/20';
   };
 
-  return (
-    <div className="card group hover:scale-105 transition-all duration-300">
+  const getRarityLabel = (score: number) => {
+    if (score >= 200) return 'Legendary';
+    if (score >= 175) return 'Epic';
+    if (score >= 150) return 'Rare';
+    if (score >= 125) return 'Uncommon';
+    return 'Common';
+  };
+
+  const NFTCard = ({ nft }: { nft: NFTData }) => (
+    <Link href={`/nft/${nft.tokenId}`} className="group">
+      <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden hover:border-purple-500/50 transition-all duration-300 hover:scale-105 hover:shadow-xl">
       {/* NFT Image */}
-      <div className="aspect-square bg-gradient-to-br from-purple-500/20 to-emerald-500/20 rounded-xl mb-4 flex items-center justify-center border border-white/10">
-        <div className="text-6xl">🔮</div>
+        <div className="aspect-square relative bg-gradient-to-br from-purple-900/20 to-teal-900/20">
+          <iframe
+            src={nft.animation_url}
+            className="w-full h-full border-0"
+            title={nft.name}
+            sandbox="allow-scripts"
+          />
+          
+          {/* Overlay */}
+          <div className="absolute top-3 left-3 right-3 flex justify-between items-start">
+            {nft.genesis_type === 'Quantum' && (
+              <span className="px-2 py-1 bg-yellow-500/20 text-yellow-300 rounded-lg text-xs font-medium border border-yellow-500/30">
+                ⚡ Quantum
+              </span>
+            )}
+            <span className={`px-2 py-1 rounded-lg text-xs font-medium border ${getStageColor(nft.stage)}`}>
+              {nft.stage}
+            </span>
+          </div>
+
+          {/* View overlay on hover */}
+          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+            <div className="text-white flex items-center space-x-2">
+              <Eye className="w-5 h-5" />
+              <span className="font-medium">View Details</span>
+            </div>
+          </div>
       </div>
       
       {/* NFT Info */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h3 className="font-bold text-white text-sm group-hover:text-purple-400 transition-colors">
+        <div className="p-4 space-y-3">
+          <div className="flex items-start justify-between">
+            <h3 className="font-bold text-white group-hover:text-purple-400 transition-colors">
             {nft.name}
           </h3>
-          <span className={`text-xs px-2 py-1 rounded-full ${getRarityColor(nft.rarity)}`}>
-            {nft.rarity}
+            <span className={`px-2 py-1 rounded-lg text-xs font-medium border ${getRarityColor(nft.rarity_score)}`}>
+              {getRarityLabel(nft.rarity_score)}
           </span>
         </div>
         
-        <div className="flex items-center justify-between">
-          <span className={`text-xs px-2 py-1 rounded-full ${getStageColor(nft.stage)}`}>
-            {nft.stage} Stage
-          </span>
-          <span className="text-xs text-white/60">
-            {nft.evolutionTime}
-          </span>
+          <div className="grid grid-cols-2 gap-2 text-sm">
+            <div>
+              <div className="text-white/60 text-xs">Geometry</div>
+              <div className="text-white/90">{nft.traits.geometry}</div>
+            </div>
+            <div>
+              <div className="text-white/60 text-xs">Environment</div>
+              <div className="text-white/90">{nft.traits.environment}</div>
+            </div>
         </div>
         
         <div className="flex items-center justify-between pt-2 border-t border-white/10">
           <div>
-            <div className="text-xs text-white/60">Owner</div>
-            <div className="text-xs font-medium text-white/80">{nft.owner}</div>
+              <div className="text-white/60 text-xs">Owner</div>
+              <div className="text-white/90 text-sm font-mono">{nft.owner}</div>
           </div>
           <div className="text-right">
-            <div className="text-xs text-white/60">Price</div>
-            <div className="text-sm font-bold text-white">{nft.price}</div>
+              <div className="text-white/60 text-xs">Rarity</div>
+              <div className="text-white font-bold">{nft.rarity_score}</div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </Link>
   );
-}
-
-export default function GalleryPage() {
-  const { stats } = useMonadStats();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedStage, setSelectedStage] = useState('');
-  const [selectedRarity, setSelectedRarity] = useState('');
 
   return (
-    <>
-      <Header />
+    <div className="min-h-screen relative overflow-hidden">
+      <Background />
       
-      <main className="main-content">
-        <div className="w-full max-w-7xl mx-auto space-y-8">
-          {/* Page Header */}
-          <section className="text-center space-y-4 fade-in">
-            <h1 className="text-4xl md:text-5xl font-bold">
-              <span className="gradient-text">Digital Beings Gallery</span>
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="text-center space-y-6 mb-8">
+          <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-teal-400 bg-clip-text text-transparent">
+            MONARA Gallery
             </h1>
-            <p className="text-lg text-white/70 max-w-2xl mx-auto">
-              Explore the evolving collection of Neural Beings on Monad Network. Each being is unique and continues to evolve.
-            </p>
-          </section>
+          <p className="text-xl text-white/70 max-w-3xl mx-auto">
+            Explore the evolving collection of Digital Beings on Monad Network. Each MONARA is unique and continues to evolve through neural computation.
+          </p>
+        </div>
 
-          {/* Gallery Stats */}
-          <section className="slide-up">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-              <StatsCard title="Total Beings" value="0" change="New!" />
-              <StatsCard title="Evolved Today" value="0" change="0%" />
-              <StatsCard title="Floor Price" value="0.1 MON" change="Genesis" />
-              <StatsCard title="Network TPS" value={`${stats.tps}`} change="Live" />
+        {/* Stats */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6 text-center">
+            <div className="text-3xl font-bold text-white mb-2">{contractStats.totalSupply}</div>
+            <div className="text-white/60">Total Beings</div>
+          </div>
+          
+          <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6 text-center">
+            <div className="text-3xl font-bold text-white mb-2">{contractStats.maxSupply}</div>
+            <div className="text-white/60">Max Supply</div>
+          </div>
+          
+          <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6 text-center">
+            <div className="text-3xl font-bold text-white mb-2">{contractStats.mintPrice} MON</div>
+            <div className="text-white/60">Floor Price</div>
+          </div>
+          
+          <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6 text-center">
+            <div className="text-3xl font-bold text-white mb-2">
+              {lastMintedTokenId ? `#${lastMintedTokenId}` : 'None'}
             </div>
-          </section>
+            <div className="text-white/60">Latest Mint</div>
+          </div>
+        </div>
 
-          {/* Search and Filters */}
-          <section className="slide-up">
-            <div className="card">
-              <div className="grid md:grid-cols-3 gap-4">
+        {/* Filters and Controls */}
+        <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-center">
                 {/* Search */}
                 <div className="relative">
-                  <MagnifyingGlassIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white/40 w-5 h-5" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/40 w-5 h-5" />
                   <input
                     type="text"
-                    placeholder="Search beings..."
+                placeholder="Search NFTs..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-white placeholder-white/40 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                className="w-full bg-white/10 border border-white/20 rounded-xl pl-10 pr-4 py-3 text-white placeholder-white/40 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                   />
                 </div>
 
                 {/* Stage Filter */}
-                <div className="relative">
-                  <FunnelIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white/40 w-5 h-5" />
                   <select
                     value={selectedStage}
                     onChange={(e) => setSelectedStage(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent appearance-none"
-                  >
-                    <option value="">All Evolution Stages</option>
-                    <option value="Spark">Spark Stage</option>
-                    <option value="Pulse">Pulse Stage</option>
-                    <option value="Flow">Flow Stage</option>
-                    <option value="Nexus">Nexus Stage</option>
-                  </select>
-                </div>
+              className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+            >
+              {EVOLUTION_STAGES.map(stage => (
+                <option key={stage} value={stage} className="bg-gray-900 text-white">
+                  {stage} {stage !== 'All' && 'Stage'}
+                </option>
+              ))}
+            </select>
 
-                {/* Rarity Filter */}
-                <div className="relative">
-                  <FunnelIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white/40 w-5 h-5" />
-                  <select
-                    value={selectedRarity}
-                    onChange={(e) => setSelectedRarity(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent appearance-none"
-                  >
-                    <option value="">All Rarities</option>
-                    <option value="Common">Common</option>
-                    <option value="Rare">Rare</option>
-                    <option value="Epic">Epic</option>
-                    <option value="Legendary">Legendary</option>
+            {/* Type Filter */}
+            <select
+              value={selectedType}
+              onChange={(e) => setSelectedType(e.target.value)}
+              className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+            >
+              {GENESIS_TYPES.map(type => (
+                <option key={type} value={type} className="bg-gray-900 text-white">
+                  {type} {type !== 'All' && 'Genesis'}
+                </option>
+              ))}
                   </select>
+
+            {/* Sort */}
+                  <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+            >
+              {SORT_OPTIONS.map(option => (
+                <option key={option.value} value={option.value} className="bg-gray-900 text-white">
+                  {option.label}
+                </option>
+              ))}
+                  </select>
+
+            {/* View Toggle & Refresh */}
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
+                className="p-3 bg-white/10 hover:bg-white/20 rounded-xl transition-colors"
+              >
+                {viewMode === 'grid' ? <List className="w-5 h-5 text-white" /> : <Grid3X3 className="w-5 h-5 text-white" />}
+              </button>
+              
+              <button
+                onClick={() => {
+                  refreshStats();
+                  loadNFTs();
+                }}
+                className="p-3 bg-white/10 hover:bg-white/20 rounded-xl transition-colors"
+              >
+                <RefreshCw className="w-5 h-5 text-white" />
+              </button>
+            </div>
+          </div>
+
+          {/* Results count */}
+          <div className="mt-4 text-center text-white/60">
+            Showing {filteredNfts.length} of {nfts.length} Digital Beings
                 </div>
               </div>
-            </div>
-          </section>
 
-          {/* NFT Grid */}
-          <section className="slide-up">
-            {sampleDigitalBeings.length === 0 ? (
-              <div className="card text-center py-16">
-                <div className="w-24 h-24 bg-gradient-to-br from-purple-500/20 to-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <span className="text-4xl">🌟</span>
+        {/* Content */}
+        {loading ? (
+          <div className="text-center py-20">
+            <div className="w-16 h-16 mx-auto border-4 border-purple-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+            <p className="text-white/70">Loading MONARA collection...</p>
+          </div>
+        ) : error ? (
+          <div className="text-center py-20">
+            <div className="w-16 h-16 mx-auto bg-red-500/20 rounded-full flex items-center justify-center mb-4">
+              <span className="text-red-400 text-xl">⚠️</span>
+            </div>
+            <p className="text-red-400 mb-4">{error}</p>
+            <button
+              onClick={loadNFTs}
+              className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl transition-colors"
+            >
+              Try Again
+            </button>
+          </div>
+        ) : filteredNfts.length === 0 ? (
+          <div className="text-center py-20">
+            <div className="w-16 h-16 mx-auto bg-purple-500/20 rounded-full flex items-center justify-center mb-4">
+              <Sparkles className="w-8 h-8 text-purple-400" />
                 </div>
                 <h3 className="text-2xl font-bold text-white mb-4">
-                  Genesis Collection Coming Soon
+              {nfts.length === 0 ? 'No Digital Beings Yet' : 'No Results Found'}
                 </h3>
-                <p className="text-white/70 max-w-md mx-auto mb-8">
-                  The first MONARA beings are waiting to be born. Be among the first to mint a Neural Being on Monad Network.
-                </p>
-                <a 
+            <p className="text-white/70 mb-6">
+              {nfts.length === 0 
+                ? 'Be the first to mint a MONARA and start the neural evolution!'
+                : 'Try adjusting your search or filter criteria.'
+              }
+            </p>
+            {nfts.length === 0 && (
+              <Link
                   href="/mint" 
-                  className="btn btn-primary text-lg px-8 py-4"
-                >
-                  Create First Being
-                </a>
+                className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold rounded-xl transition-all duration-200 hover:scale-105"
+              >
+                <Sparkles className="w-5 h-5 mr-2" />
+                Mint First MONARA
+              </Link>
+            )}
               </div>
             ) : (
-              <div className="nft-grid">
-                {sampleDigitalBeings.map((nft) => (
-                  <NFTCard key={nft.id} nft={nft} />
+          <div className={`grid gap-6 ${
+            viewMode === 'grid' 
+              ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' 
+              : 'grid-cols-1'
+          }`}>
+            {filteredNfts.map((nft) => (
+              <NFTCard key={nft.tokenId} nft={nft} />
                 ))}
               </div>
             )}
-          </section>
-
-          {/* Launch Banner */}
-          <section className="slide-up">
-            <div className="card text-center">
-              <h2 className="text-3xl font-bold gradient-text mb-4">
-                Ready to Join the Evolution?
-              </h2>
-              <p className="text-white/70 max-w-xl mx-auto mb-8">
-                Create your own evolving Neural Being and watch it develop through the stages of digital consciousness.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <a href="/mint" className="btn btn-primary text-lg px-8 py-4">
-                  Start Creating
-                </a>
-                <a href="/about" className="btn btn-secondary text-lg px-8 py-4">
-                  Learn More
-                </a>
               </div>
             </div>
-          </section>
-        </div>
-      </main>
-    </>
   );
 } 
+
+export default GalleryPage; 

@@ -19,7 +19,7 @@ export const MONAD_TESTNET = {
 
 // Contract Addresses (Update after deployment)
 export const CONTRACT_ADDRESSES = {
-  MONARA: '0x0000000000000000000000000000000000000000' as `0x${string}`,
+  MONARA: '0xa7793FfC44680c03dC18ab0972b2a96A20d82335' as `0x${string}`,
 } as const;
 
 // MONARA Contract ABI
