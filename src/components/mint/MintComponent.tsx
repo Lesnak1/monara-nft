@@ -9,7 +9,6 @@ import NFTPreview from './NFTPreview';
 import { useMonanimalContract } from '@/hooks/useMonanimalContract';
 import { useNetwork } from '@/hooks/useNetwork';
 import { NetworkSwitcher } from '@/components/NetworkSwitcher';
-import { securityUtils, RATE_LIMITS, RateLimitError, ValidationError } from '@/lib/security';
 
 const TRAIT_OPTIONS = {
   coreGeometry: ['Circle', 'Diamond', 'Hexagon', 'Octagon', 'Star', 'Triangle', 'Pentagon', 'Cross'],
@@ -22,10 +21,6 @@ interface MintState {
   isLoading: boolean;
   error: string | null;
   success: boolean;
-  rateLimitInfo: {
-    remaining: number;
-    resetTime: number;
-  };
 }
 
 export default function MintComponent() {
@@ -62,14 +57,9 @@ export default function MintComponent() {
     isLoading: false,
     error: null,
     success: false,
-    rateLimitInfo: {
-      remaining: RATE_LIMITS.MINT.maxAttempts,
-      resetTime: 0,
-    },
   });
 
   const [selectedType, setSelectedType] = useState<'neural' | 'quantum'>('neural');
-  const [securityNonce, setSecurityNonce] = useState<string>('');
 
   // Randomize traits on mount
   useEffect(() => {
@@ -82,243 +72,92 @@ export default function MintComponent() {
     });
   }, []);
 
-  // Generate security nonce on mount
-  useEffect(() => {
-    setSecurityNonce(securityUtils.generateNonce());
-  }, []);
-
-  // Update rate limit info
-  useEffect(() => {
-    if (address) {
-      const remaining = securityUtils.getRemainingAttempts(address, RATE_LIMITS.MINT);
-      setMintState(prev => ({
-        ...prev,
-        rateLimitInfo: {
-          remaining,
-          resetTime: Date.now() + RATE_LIMITS.MINT.windowMs,
-        },
-      }));
-    }
-  }, [address]);
-
-  // Security validation before minting
-  const validateMintRequest = useCallback((): boolean => {
-    try {
-      // Check if user is connected
-      if (!isConnected || !address) {
-        throw new ValidationError('Wallet not connected');
-      }
-
-      // Validate mint parameters
-      const validation = securityUtils.validateMintParams({
-        type: selectedType,
-        recipient: address,
-      });
-
-      if (!validation.isValid) {
-        throw new ValidationError(validation.error || 'Invalid mint parameters');
-      }
-
-      // Check rate limiting
-      if (!securityUtils.checkRateLimit(address, RATE_LIMITS.MINT)) {
-        throw new RateLimitError('Too many mint attempts. Please wait before trying again.');
-      }
-
-      // Check contract readiness
-      if (!contractStats.isContractReady) {
-        throw new ValidationError('Contract not ready. Please wait.');
-      }
-
-      // Check supply limits
-      if (contractStats.totalSupply && contractStats.maxSupply && contractStats.totalSupply >= contractStats.maxSupply) {
-        throw new ValidationError('Maximum supply reached');
-      }
-
-      return true;
-    } catch (error) {
-      if (error instanceof ValidationError || error instanceof RateLimitError) {
-        setMintState(prev => ({ ...prev, error: error.message }));
-      } else {
-        setMintState(prev => ({ ...prev, error: 'Validation failed' }));
-      }
-      return false;
-    }
-  }, [isConnected, address, selectedType, contractStats.isContractReady, contractStats.totalSupply, contractStats.maxSupply]);
-
   const handleMint = useCallback(async () => {
-    if (!isConnected || !address) return;
+    if (!isConnected || !address) {
+      console.log('❌ Wallet not connected');
+      return;
+    }
     
     if (!isMonadNetwork) {
+      console.log('🔄 Switching to Monad Network...');
       switchToMonadTestnet();
       return;
     }
 
     try {
-      // Security validation
-      if (!validateMintRequest()) {
-        setMintState(prev => ({ ...prev, isLoading: false }));
-        return;
+      console.log('🚀 Starting mint process...');
+      console.log('📊 Contract Status:', {
+        isContractReady: contractStats.isContractReady,
+        mintingActive: contractStats.mintingActive,
+        isPaused: contractStats.isPaused,
+        totalSupply: contractStats.totalSupply,
+        maxSupply: contractStats.maxSupply
+      });
+
+      // Basic validation
+      if (!contractStats.isContractReady) {
+        throw new Error('Contract not ready. Please wait for contract to load.');
       }
 
-      // Get mint price for balance validation
+      if (contractStats.isPaused) {
+        throw new Error('Contract is paused. Minting is temporarily disabled.');
+      }
+
+      if (!contractStats.mintingActive) {
+        throw new Error('Minting is currently disabled.');
+      }
+
+      if (contractStats.totalSupply >= contractStats.maxSupply) {
+        throw new Error('Maximum supply reached.');
+      }
+
+      // Get mint price
       const mintPrice = selectedType === 'neural' ? contractStats.mintPrice : contractStats.quantumPrice;
-      if (!mintPrice) {
-        throw new Error('Mint price not available');
+      if (!mintPrice || parseFloat(mintPrice) <= 0) {
+        throw new Error('Mint price not available.');
       }
 
-      // Enhanced balance validation with multiple fallback methods
-      const isQuantumMint = selectedType === 'quantum';
-      const requiredPrice = selectedType === 'neural' ? contractStats.mintPrice : contractStats.quantumPrice;
-      
-      console.log('🔍 Starting comprehensive balance validation:', {
-        selectedType,
-        isQuantumMint,
-        requiredPrice,
-        walletBalance,
-        balanceError: balanceError?.message,
-        rawBalance,
-        balanceSymbol: rawBalance?.symbol,
-        isMonadNetwork,
-        rpcEndpoint: 'https://testnet-rpc.monad.xyz'
-      });
+      console.log(`💰 Mint Price: ${mintPrice} MON`);
+      console.log(`👤 User Address: ${address}`);
+      console.log(`🎯 Mint Type: ${selectedType}`);
 
-      // Step 1: Standard wagmi balance check
-      const balanceCheck = hasEnoughBalance(isQuantumMint);
-      console.log('📊 Method 1 (wagmi):', balanceCheck);
-      
-      // Step 2: Alternative calculation check
-      const alternativeCheck = checkBalanceAlternative(isQuantumMint);
-      console.log('📊 Method 2 (alternative):', alternativeCheck);
-      
-      // Step 3: Enhanced check with manual RPC fallback (PRIMARY METHOD)
-      let enhancedCheck = false;
-      try {
-        console.log('🔄 Attempting enhanced balance check with RPC fallback...');
-        setMintState(prev => ({ ...prev, isLoading: true })); // Show loading during balance check
-        enhancedCheck = await hasEnoughBalanceEnhanced(isQuantumMint);
-        console.log('✅ Enhanced balance check result:', enhancedCheck);
-      } catch (enhancedError: any) {
-        console.error('❌ Enhanced balance check failed:', enhancedError.message);
-        // Don't fail completely, continue with other methods
-      }
-      
-      // Step 4: Manual balance fetch if all methods fail
-      let manualCheck = false;
-      if (!balanceCheck && !alternativeCheck && !enhancedCheck) {
-        console.log('🔄 All methods failed, attempting direct manual balance fetch...');
-        try {
-          const manualBalance = await fetchBalanceManually();
-          if (manualBalance) {
-            const requiredAmount = parseEther(requiredPrice);
-            manualCheck = manualBalance >= requiredAmount;
-            console.log('💰 Manual balance check:', {
-              balance: formatEther(manualBalance),
-              required: requiredPrice,
-              hasEnough: manualCheck
-            });
-          }
-        } catch (manualError: any) {
-          console.error('❌ Manual balance fetch failed:', manualError.message);
-        }
-      }
-      
-      // Final balance decision with priority order
-      const finalBalanceCheck = enhancedCheck || balanceCheck || alternativeCheck || manualCheck;
-      
-      console.log('📋 Final balance validation summary:', {
-        method1_wagmi: balanceCheck,
-        method2_alternative: alternativeCheck,
-        method3_enhanced: enhancedCheck,
-        method4_manual: manualCheck,
-        finalDecision: finalBalanceCheck,
-        userHasBalance: walletBalance !== '0',
-        requiredPrice,
-        networkConnected: isMonadNetwork
-      });
-      
-      if (!finalBalanceCheck) {
-        // Show user-friendly warning instead of hard error
-        console.warn('⚠️ Could not verify balance, but proceeding with optimistic approach');
-        
-        // Check if we have any balance information at all
-        const hasAnyBalanceInfo = walletBalance !== '0' || (rawBalance && rawBalance.value > 0n);
-        
-        if (!hasAnyBalanceInfo) {
-          // Only fail if we're certain there's no balance
-          const errorMessage = `Unable to verify MON balance. Please ensure you have ${requiredPrice} MON and try again. Get MON from https://faucet.monad.xyz`;
-          console.error('💸 No balance detected:', errorMessage);
-          throw new Error(errorMessage);
-        } else {
-          // Let user proceed with optimistic UI - MetaMask will reject if insufficient
-          console.log('🎯 Proceeding with optimistic mint - MetaMask will validate balance');
-        }
-      }
-
-      console.log(`🚀 Initiating ${selectedType} mint with nonce: ${securityNonce}`);
-      console.log(`💰 Price: ${mintPrice} MON`);
-      console.log(`👤 Address: ${address}`);
-
-      // Show loading state before mint
+      // Show loading state
       setMintState(prev => ({ ...prev, isLoading: true, error: null }));
 
-      // Execute mint based on type with proper error handling
-      try {
-        console.log('🔄 Calling mint function, this should trigger MetaMask...');
-        
+      // Execute mint
+      console.log('🔄 Calling mint function...');
+      
       if (selectedType === 'neural') {
-          console.log('🧠 Executing neuralGenesis...');
+        console.log('🧠 Executing neuralGenesis...');
         await mint();
       } else {
-          console.log('⚡ Executing quantumGenesis...');
+        console.log('⚡ Executing quantumGenesis...');
         await quantumGenesis();
       }
 
-      console.log(`✅ Mint transaction initiated successfully`);
-      } catch (mintExecutionError: any) {
-        console.error('❌ Mint execution failed:', mintExecutionError);
-        
-        // Check if error is user rejection vs other issues
-        if (mintExecutionError?.message?.includes('rejected') || 
-            mintExecutionError?.code === 4001) {
-          throw new Error('Transaction rejected by user');
-        } else if (mintExecutionError?.message?.includes('insufficient')) {
-          throw new Error('Insufficient funds for gas fees');
-        } else {
-          throw new Error(`Mint execution failed: ${mintExecutionError?.message || 'Unknown error'}`);
-        }
-      }
+      console.log('✅ Mint transaction initiated successfully');
 
-      // Update rate limit info
-      const remaining = securityUtils.getRemainingAttempts(address!, RATE_LIMITS.MINT);
+      // Success state
       setMintState(prev => ({
         ...prev,
         isLoading: false,
         success: true,
         error: null,
-        rateLimitInfo: {
-          ...prev.rateLimitInfo,
-          remaining,
-        },
       }));
-
-      // Generate new nonce for next transaction
-      setSecurityNonce(securityUtils.generateNonce());
 
     } catch (error: any) {
       console.error('❌ Mint failed:', error);
       
       let errorMessage = 'Minting failed';
       
-      if (error.message?.includes('User rejected')) {
+      if (error.message?.includes('User rejected') || error.message?.includes('rejected')) {
         errorMessage = 'Transaction rejected by user';
       } else if (error.message?.includes('insufficient funds')) {
         errorMessage = 'Insufficient funds for transaction';
       } else if (error.message?.includes('gas')) {
         errorMessage = 'Gas estimation failed. Please try again.';
       } else if (error.message) {
-        // Sanitize error message to prevent XSS
-        const sanitizedMessage = securityUtils.sanitizeHtml(error.message);
-        errorMessage = sanitizedMessage.substring(0, 200); // Limit error message length
+        errorMessage = error.message.substring(0, 200);
       }
 
       setMintState(prev => ({
@@ -329,20 +168,20 @@ export default function MintComponent() {
       }));
     }
   }, [
-    validateMintRequest,
+    isConnected,
+    address,
     isMonadNetwork,
     switchToMonadTestnet,
-    address,
     selectedType,
     contractStats.isContractReady,
+    contractStats.mintingActive,
+    contractStats.isPaused,
     contractStats.totalSupply,
     contractStats.maxSupply,
-    walletBalance,
     contractStats.mintPrice,
     contractStats.quantumPrice,
     mint,
     quantumGenesis,
-    securityNonce,
   ]);
 
   // Clear error after 10 seconds
@@ -354,15 +193,6 @@ export default function MintComponent() {
       return () => clearTimeout(timer);
     }
   }, [mintState.error]);
-
-  // Cleanup rate limit store periodically
-  useEffect(() => {
-    const interval = setInterval(() => {
-      securityUtils.cleanupRateLimit();
-    }, 60000); // Clean every minute
-
-    return () => clearInterval(interval);
-  }, []);
 
   const randomizeTraits = () => {
     setSelectedTraits({
@@ -439,9 +269,6 @@ export default function MintComponent() {
                 <div>Current Token ID: {contractStats.currentTokenId}</div>
                 {balanceError && (
                   <div className="text-red-400">Balance Error: {balanceError.message}</div>
-                )}
-                {contractStats.rateLimitInfo && (
-                  <div>Rate Limit: {contractStats.rateLimitInfo.mintsInCurrentWindow}/10 (Can Mint: {contractStats.rateLimitInfo.canMint ? 'Yes' : 'No'})</div>
                 )}
                 <div className="pt-2 border-t border-white/10">
                   <button
@@ -628,12 +455,11 @@ export default function MintComponent() {
                 !contractStats.isContractReady || 
                 !contractStats.mintingActive ||
                 contractStats.isPaused ||
-                mintState.rateLimitInfo.remaining <= 0 ||
                 !isConnected ||
                 !address
               }
               className={`w-full px-8 py-4 rounded-2xl font-bold text-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
-                mintState.isLoading || isMintLoading || isQuantumLoading || !isMonadNetwork || !contractStats.isContractReady || mintState.rateLimitInfo.remaining <= 0
+                mintState.isLoading || isMintLoading || isQuantumLoading || !isMonadNetwork || !contractStats.isContractReady
                   ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
                   : selectedType === 'neural'
                   ? 'bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white'
@@ -661,8 +487,6 @@ export default function MintComponent() {
                 'Minting is Disabled'
               ) : contractStats.isPaused ? (
                 'Contract is Paused'
-              ) : mintState.rateLimitInfo.remaining <= 0 ? (
-                'Rate Limit Reached'
               ) : (
                 <>
                   {selectedType === 'neural' ? <Sparkles className="w-5 h-5 mr-2 inline" /> : <Zap className="w-5 h-5 mr-2 inline" />}
