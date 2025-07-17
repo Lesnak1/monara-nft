@@ -10,6 +10,7 @@ import { useMonanimalContract } from '@/hooks/useMonanimalContract';
 import { useNetwork } from '@/hooks/useNetwork';
 import { NetworkSwitcher } from '@/components/NetworkSwitcher';
 import { AuthorizationGuide } from '@/components/AuthorizationGuide';
+import { WalletTroubleshooting } from '@/components/WalletTroubleshooting';
 
 const TRAIT_OPTIONS = {
   coreGeometry: ['Circle', 'Diamond', 'Hexagon', 'Octagon', 'Star', 'Triangle', 'Pentagon', 'Cross'],
@@ -61,6 +62,7 @@ export default function MintComponent() {
   });
 
   const [selectedType, setSelectedType] = useState<'neural' | 'quantum'>('neural');
+  const [showTroubleshooting, setShowTroubleshooting] = useState(false);
 
   // Randomize traits on mount
   useEffect(() => {
@@ -78,14 +80,23 @@ export default function MintComponent() {
       console.log('❌ Wallet not connected');
       setMintState(prev => ({
         ...prev,
-        error: 'Please connect your wallet first'
+        error: 'Please connect your wallet first. If you have a wallet installed, try refreshing the page.'
       }));
       return;
     }
     
     if (!isMonadNetwork) {
       console.log('🔄 Switching to Monad Network...');
-      switchToMonadTestnet();
+      try {
+        await switchToMonadTestnet();
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Failed to switch network';
+        setMintState(prev => ({
+          ...prev,
+          error: `Please switch to Monad Testnet to mint. ${errorMessage}`
+        }));
+        return;
+      }
       return;
     }
 
@@ -234,8 +245,14 @@ export default function MintComponent() {
             <p className="text-white/70 max-w-md mx-auto">
               Connect your wallet to start minting your evolving digital being on Monad Network.
             </p>
-            <div className="flex justify-center">
+            <div className="flex flex-col items-center space-y-3">
               <ConnectButton />
+              <button
+                onClick={() => setShowTroubleshooting(true)}
+                className="text-sm text-purple-400 hover:text-purple-300 transition-colors underline"
+              >
+                Having connection issues?
+              </button>
             </div>
           </div>
         </div>
@@ -602,6 +619,12 @@ export default function MintComponent() {
           </div>
         </div>
       </div>
+
+      {/* Wallet Troubleshooting Modal */}
+      <WalletTroubleshooting 
+        isOpen={showTroubleshooting}
+        onClose={() => setShowTroubleshooting(false)}
+      />
     </div>
   );
 }
