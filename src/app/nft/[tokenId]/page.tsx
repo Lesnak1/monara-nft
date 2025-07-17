@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { useAccount } from 'wagmi';
-import { formatEther } from 'viem';
+
 import { 
   ArrowLeft, 
   ExternalLink, 
@@ -51,13 +51,7 @@ export default function NFTDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
-  useEffect(() => {
-    if (tokenId) {
-      loadNFTData();
-    }
-  }, [tokenId]);
-
-  const loadNFTData = async () => {
+  const loadNFTData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -89,12 +83,19 @@ export default function NFTDetailPage() {
       };
 
       setNftData(sampleData);
-    } catch (err: any) {
-      setError(err.message || 'Failed to load NFT data');
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load NFT data';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
-  };
+  }, [tokenId, address]);
+
+  useEffect(() => {
+    if (tokenId) {
+      loadNFTData();
+    }
+  }, [tokenId, loadNFTData]);
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -114,6 +115,7 @@ export default function NFTDetailPage() {
     }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const getTraitRarity = (traitType: string, value: string | number) => {
     // Simulate rarity calculation
     const rarities = ['Common', 'Uncommon', 'Rare', 'Epic', 'Legendary'];

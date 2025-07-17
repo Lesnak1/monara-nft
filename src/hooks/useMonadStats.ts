@@ -85,8 +85,9 @@ export function useMonadStats() {
         console.warn('⚠️ Using fallback data:', data.error);
       }
 
-    } catch (err: any) {
-      console.error('❌ Failed to fetch network stats:', err);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      console.error('❌ Failed to fetch network stats:', errorMessage);
       setError('Failed to fetch network stats');
       
       // Fallback to realistic testnet data

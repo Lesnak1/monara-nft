@@ -13,7 +13,6 @@ import {
   Cpu,
   Database,
   Zap,
-  Globe,
   Lock,
   FileText,
   Network,

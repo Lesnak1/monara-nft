@@ -7,7 +7,6 @@ import {
   Eye, 
   Database, 
   Lock, 
-  Cookie,
   UserCheck,
   Clock,
   ExternalLink,
@@ -223,7 +222,7 @@ export default function PrivacyPage() {
 
           {/* 9. Children's Privacy */}
           <section>
-            <h2 className="text-2xl font-bold text-white mb-4">9. Children's Privacy</h2>
+            <h2 className="text-2xl font-bold text-white mb-4">9. Children&apos;s Privacy</h2>
             <p className="text-white/80 leading-relaxed">
               MONARA is not intended for users under 18 years of age. We do not knowingly collect 
               personal information from children. If you believe a child has provided us with 

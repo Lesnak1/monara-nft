@@ -132,10 +132,15 @@ export const getKnownAssetMetadata = (contractAddress: string): KnownAsset | nul
 };
 
 // Generate MetaMask-compatible NFT metadata
-export const generateMetaMaskMetadata = (tokenId: number, traits?: any) => {
+interface TraitsData {
+  isQuantumGenesis?: boolean;
+  evolutionStage?: number;
+  mutation?: number;
+}
+
+export const generateMetaMaskMetadata = (tokenId: number, traits?: TraitsData) => {
   const isQuantum = traits?.isQuantumGenesis || Math.random() > 0.8;
   const evolutionStage = traits?.evolutionStage || Math.floor(Math.random() * 4) + 1;
-  const mutation = traits?.mutation || Math.floor(Math.random() * 255);
   
   // Select appropriate sample based on traits
   let baseMeta;

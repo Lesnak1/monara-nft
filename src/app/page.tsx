@@ -3,30 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import { useMonadStats } from '@/hooks/useMonadStats';
 import { useMonanimalContract } from '@/hooks/useMonanimalContract';
-import { Activity, Zap, Users, TrendingUp, Sparkles, Shield, Brain, Cpu, Globe } from 'lucide-react';
+import { Activity, Zap, Users, TrendingUp, Sparkles, Shield, Brain, Globe } from 'lucide-react';
 import Link from 'next/link';
 
-function StatsCard({ title, value, description, icon }: { 
-  title: string; 
-  value: string; 
-  description: string; 
-  icon: string; 
-}) {
-  return (
-    <div className="card text-center group hover:scale-105 transition-all duration-300">
-      <div className="text-2xl mb-3">{icon}</div>
-      <div className="text-2xl font-bold text-white mb-2 group-hover:scale-110 transition-transform">
-        {value}
-      </div>
-      <div className="text-sm font-medium text-white/80 mb-2">
-        {title}
-      </div>
-      <div className="text-xs text-white/60">
-        {description}
-      </div>
-    </div>
-  );
-}
+
 
 function FeatureCard({ icon, title, description }: { 
   icon: React.ReactNode; 
@@ -87,7 +67,7 @@ export default function HomePage() {
           
           <p className="text-lg text-center text-white/70 max-w-3xl mb-8 px-4">
                 Experience the future of NFTs with Neural Networks that evolve, adapt, and transcend 
-            through computational stages on Monad's lightning-fast blockchain.
+            through computational stages on Monad&apos;s lightning-fast blockchain.
           </p>
 
           {/* Enhanced Current Stage Card */}

@@ -83,8 +83,9 @@ export async function GET(
       }
       
       console.log(`✅ Token ${tokenId} exists, owner: ${exists}`);
-    } catch (existsError: any) {
-      console.warn(`⚠️ Could not check token existence: ${existsError.message}`);
+    } catch (existsError) {
+      const errorMessage = existsError instanceof Error ? existsError.message : 'Unknown error';
+      console.warn(`⚠️ Could not check token existence: ${errorMessage}`);
       // Continue anyway, might be a network issue
     }
 
@@ -124,15 +125,16 @@ export async function GET(
         },
       });
 
-    } catch (contractError: any) {
-      console.error(`❌ Contract read error for token ${tokenId}:`, contractError);
+    } catch (contractError) {
+      const errorMessage = contractError instanceof Error ? contractError.message : 'Unknown error';
+      console.error(`❌ Contract read error for token ${tokenId}:`, errorMessage);
       
       // Detailed error logging
-      if (contractError.message) {
+      if (contractError instanceof Error) {
         console.error(`Error message: ${contractError.message}`);
-      }
-      if (contractError.cause) {
-        console.error(`Error cause: ${contractError.cause}`);
+        if ('cause' in contractError && contractError.cause) {
+          console.error(`Error cause: ${contractError.cause}`);
+        }
       }
       
       // Return placeholder SVG instead of error
@@ -152,11 +154,13 @@ export async function GET(
       });
     }
 
-  } catch (error: any) {
-    console.error(`💥 API Error for token ${(await params).tokenId}:`, error);
+  } catch (error) {
+    const resolvedParams = await params;
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error(`💥 API Error for token ${resolvedParams.tokenId}:`, errorMessage);
     
     // Return a functional error SVG instead of JSON error
-    const errorSVG = generateErrorSVG((await params).tokenId);
+    const errorSVG = generateErrorSVG(resolvedParams.tokenId);
     
     return new NextResponse(errorSVG, {
       status: 200,

@@ -1,22 +1,16 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Background } from "@/components/Background";
-import { ClientWrapper } from "@/components/ClientWrapper";
 import { useMonanimalContract } from '@/hooks/useMonanimalContract';
 import { 
   Search, 
-  Filter, 
   Grid3X3, 
   List, 
   Sparkles, 
-  Zap, 
-  Activity, 
-  TrendingUp,
   RefreshCw,
-  Eye,
-  ExternalLink
+  Eye
 } from 'lucide-react';
 
 interface NFTData {
@@ -66,12 +60,7 @@ function GalleryPage() {
   const [sortBy, setSortBy] = useState('newest');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   
-  // Load NFTs from contract
-  useEffect(() => {
-    loadNFTs();
-  }, [contractStats.totalSupply, lastMintedTokenId]);
-
-  const loadNFTs = async () => {
+  const loadNFTs = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -106,14 +95,14 @@ function GalleryPage() {
                 image: data.image,
                 animation_url: data.animation_url,
                 external_url: data.external_url,
-                stage: data.attributes?.find((a:any) => a.trait_type === 'Evolution Stage')?.value || 'Genesis',
-                genesis_type: data.attributes?.find((a:any) => a.trait_type === 'Genesis Type')?.value === 'Quantum' ? 'Quantum' : 'Neural',
-                rarity_score: data.attributes?.find((a:any) => a.trait_type === 'Rarity Score')?.value || 100,
-                age_days: data.attributes?.find((a:any) => a.trait_type === 'Age (Days)')?.value || 0,
+                stage: data.attributes?.find((a: { trait_type: string; value: unknown }) => a.trait_type === 'Evolution Stage')?.value || 'Genesis',
+                genesis_type: data.attributes?.find((a: { trait_type: string; value: unknown }) => a.trait_type === 'Genesis Type')?.value === 'Quantum' ? 'Quantum' : 'Neural',
+                rarity_score: data.attributes?.find((a: { trait_type: string; value: unknown }) => a.trait_type === 'Rarity Score')?.value || 100,
+                age_days: data.attributes?.find((a: { trait_type: string; value: unknown }) => a.trait_type === 'Age (Days)')?.value || 0,
                 traits: {
-                  geometry: data.attributes?.find((a:any) => a.trait_type === 'Core Geometry')?.value || 'Neural Web',
-                  environment: data.attributes?.find((a:any) => a.trait_type === 'Environment')?.value || 'Cyberspace',
-                  evolution_stage: data.attributes?.find((a:any) => a.trait_type === 'Evolution Stage')?.value || 'Genesis',
+                  geometry: data.attributes?.find((a: { trait_type: string; value: unknown }) => a.trait_type === 'Core Geometry')?.value || 'Neural Web',
+                  environment: data.attributes?.find((a: { trait_type: string; value: unknown }) => a.trait_type === 'Environment')?.value || 'Cyberspace',
+                  evolution_stage: data.attributes?.find((a: { trait_type: string; value: unknown }) => a.trait_type === 'Evolution Stage')?.value || 'Genesis',
                 },
               };
             })
@@ -127,13 +116,19 @@ function GalleryPage() {
       const loadedNfts = (await Promise.all(nftPromises)).filter(Boolean) as NFTData[];
       console.log(`✅ Loaded ${loadedNfts.length} NFTs successfully`);
       setNfts(loadedNfts);
-    } catch (err: any) {
-      console.error('💥 Failed to load NFTs:', err);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      console.error('💥 Failed to load NFTs:', errorMessage);
       setError('Failed to load NFT collection. Please refresh the page.');
     } finally {
       setLoading(false);
     }
-  };
+  }, [contractStats.totalSupply]);
+
+  // Load NFTs from contract
+  useEffect(() => {
+    loadNFTs();
+  }, [contractStats.totalSupply, lastMintedTokenId, loadNFTs]);
 
   // Apply filters and sorting
   useEffect(() => {

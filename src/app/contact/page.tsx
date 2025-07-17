@@ -69,7 +69,7 @@ export default function ContactPage() {
             Contact Us
           </h1>
           <p className="text-xl text-white/70 max-w-2xl mx-auto">
-            Have questions about MONARA? We're here to help with your evolving digital beings.
+            Have questions about MONARA? We&apos;re here to help with your evolving digital beings.
           </p>
         </div>
 
@@ -201,7 +201,7 @@ export default function ContactPage() {
                   </div>
                   <h3 className="text-xl font-bold text-white mb-2">Message Sent!</h3>
                   <p className="text-white/70">
-                    Thank you for reaching out. We'll get back to you within 24 hours.
+                    Thank you for reaching out. We&apos;ll get back to you within 24 hours.
                   </p>
                 </div>
               ) : (

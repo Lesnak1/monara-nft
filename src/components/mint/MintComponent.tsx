@@ -156,20 +156,21 @@ export default function MintComponent() {
       let errorMessage = 'Minting failed';
       
       // Handle specific MetaMask/wallet errors
-      if (error.message?.includes('unauthorized') || error.message?.includes('not been authorized')) {
+      const errorText = error instanceof Error ? error.message : String(error);
+      if (errorText.includes('unauthorized') || errorText.includes('not been authorized')) {
         errorMessage = 'Please authorize this website in your wallet. Go to MetaMask settings and add localhost:3000 to trusted sites.';
-      } else if (error.message?.includes('User rejected') || error.message?.includes('rejected')) {
+      } else if (errorText.includes('User rejected') || errorText.includes('rejected')) {
         errorMessage = 'Transaction rejected by user';
-      } else if (error.message?.includes('insufficient funds')) {
+      } else if (errorText.includes('insufficient funds')) {
         errorMessage = 'Insufficient funds for transaction';
-      } else if (error.message?.includes('gas')) {
+      } else if (errorText.includes('gas')) {
         errorMessage = 'Gas estimation failed. Please try again.';
-      } else if (error.message?.includes('network')) {
+      } else if (errorText.includes('network')) {
         errorMessage = 'Network connection issue. Please check your connection and try again.';
-      } else if (error.message?.includes('contract')) {
+      } else if (errorText.includes('contract')) {
         errorMessage = 'Contract interaction failed. Please refresh the page and try again.';
-      } else if (error.message) {
-        errorMessage = error.message.substring(0, 200);
+      } else if (errorText) {
+        errorMessage = errorText.substring(0, 200);
       }
 
       setMintState(prev => ({
@@ -280,7 +281,7 @@ export default function MintComponent() {
                 <div>Total Supply: {contractStats.totalSupply}</div>
                 <div>Current Token ID: {contractStats.currentTokenId}</div>
                 {balanceError && (
-                  <div className="text-red-400">Balance Error: {balanceError.message}</div>
+                  <div className="text-red-400">Balance Error: {balanceError instanceof Error ? balanceError.message : String(balanceError)}</div>
                 )}
                 <div className="pt-2 border-t border-white/10">
                   <button
@@ -296,9 +297,10 @@ export default function MintComponent() {
                           console.log('❌ Manual refresh failed');
                           alert('Balance refresh failed. Please check network connection.');
                         }
-                      } catch (error: any) {
-                        console.error('❌ Manual refresh error:', error.message);
-                        alert(`Balance refresh error: ${error.message}`);
+                      } catch (error) {
+                        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+                        console.error('❌ Manual refresh error:', errorMessage);
+                        alert(`Balance refresh error: ${errorMessage}`);
                       }
                     }}
                     className="text-blue-400 hover:text-blue-300 underline text-xs"
