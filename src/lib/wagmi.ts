@@ -1,5 +1,11 @@
 import { createConfig, http } from 'wagmi';
 import { defineChain } from 'viem';
+import { 
+  injected, 
+  walletConnect, 
+  metaMask, 
+  coinbaseWallet 
+} from '@wagmi/connectors';
 
 // Monad Testnet Chain Definition
 export const monadTestnet = defineChain({
@@ -58,12 +64,55 @@ export const CONTRACT_ADDRESSES = {
 
 export const MONAD_TESTNET_CHAIN_ID = monadTestnet.id;
 
-// Wagmi Configuration
+// Get WalletConnect project ID from environment or use a default for demo
+const getWalletConnectProjectId = () => {
+  return process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || 'your-project-id-here';
+};
+
+// Wagmi Configuration with Connectors
 export const config = createConfig({
   chains: [monadTestnet],
+  connectors: [
+    // Injected wallets (MetaMask, Trust Wallet, etc.)
+    injected({
+      target: 'metaMask',
+    }),
+    injected({
+      target: 'trustWallet',
+    }),
+    injected(),
+    
+    // MetaMask connector
+    metaMask({
+      dappMetadata: {
+        name: 'MONARA - Neural Beings',
+        url: typeof window !== 'undefined' ? window.location.origin : 'https://your-domain.com',
+        iconUrl: typeof window !== 'undefined' ? `${window.location.origin}/favicon.ico` : 'https://your-domain.com/favicon.ico',
+      },
+    }),
+    
+    // Coinbase Wallet
+    coinbaseWallet({
+      appName: 'MONARA - Neural Beings',
+      appLogoUrl: typeof window !== 'undefined' ? `${window.location.origin}/favicon.ico` : 'https://your-domain.com/favicon.ico',
+    }),
+    
+    // WalletConnect
+    walletConnect({
+      projectId: getWalletConnectProjectId(),
+      metadata: {
+        name: 'MONARA - Neural Beings',
+        description: 'Premium AI-Generated NFT Collection on Monad Blockchain',
+        url: typeof window !== 'undefined' ? window.location.origin : 'https://your-domain.com',
+        icons: [typeof window !== 'undefined' ? `${window.location.origin}/favicon.ico` : 'https://your-domain.com/favicon.ico'],
+      },
+      showQrModal: true,
+    }),
+  ],
   transports: {
     [monadTestnet.id]: http(),
   },
+  ssr: true,
 });
 
 export { monadTestnet as defaultChain };

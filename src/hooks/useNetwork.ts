@@ -98,17 +98,32 @@ export function useNetwork() {
   const isSupported = isMonadNetwork;
   const isWrongNetwork = !isMonadNetwork;
 
-  const switchToMonadTestnet = () => {
-    switchChain({ chainId: 10143 });
+  const switchToMonadTestnet = async () => {
+    try {
+      await switchChain({ chainId: 10143 });
+    } catch (error) {
+      console.error('Failed to switch to Monad Testnet:', error);
+      throw error;
+    }
   };
 
-  const switchToHardhatLocal = () => {
-    switchChain({ chainId: 31337 });
+  const switchToHardhatLocal = async () => {
+    try {
+      await switchChain({ chainId: 31337 });
+    } catch (error) {
+      console.error('Failed to switch to Hardhat Local:', error);
+      throw error;
+    }
   };
 
-  const switchToMonad = () => {
-    // Şimdilik testnet'e yönlendir çünkü mainnet henüz aktif değil
-    switchChain({ chainId: 10143 });
+  const switchToMonad = async () => {
+    // For now, redirect to testnet since mainnet is not active yet
+    try {
+      await switchChain({ chainId: 10143 });
+    } catch (error) {
+      console.error('Failed to switch to Monad:', error);
+      throw error;
+    }
   };
 
   const getNetworkStatus = () => {
