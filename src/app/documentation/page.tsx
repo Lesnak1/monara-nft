@@ -11,13 +11,10 @@ import {
   Copy, 
   CheckCircle,
   ArrowRight,
-  Cpu,
   Database,
   Shield,
-  Globe,
   Sparkles,
   Brain,
-  Network,
   Clock
 } from 'lucide-react';
 import { useState } from 'react';

@@ -19,7 +19,7 @@ const MONAD_TESTNET_PARAMS = {
 };
 
 export function NetworkSwitcher() {
-  const { isMonadNetwork, switchToMonadTestnet, currentNetwork } = useNetwork();
+  const { isMonadNetwork, currentNetwork } = useNetwork();
   const [isAdding, setIsAdding] = useState(false);
   const [showAddSuccess, setShowAddSuccess] = useState(false);
 
@@ -40,13 +40,13 @@ export function NetworkSwitcher() {
 
       setShowAddSuccess(true);
       setTimeout(() => setShowAddSuccess(false), 3000);
-    } catch (error: any) {
+    } catch (error) {
       console.error('Failed to add Monad network:', error);
       
-      if (error.code === 4001) {
+      if (error && typeof error === 'object' && 'code' in error && error.code === 4001) {
         // User rejected the request
         alert('Network addition cancelled by user.');
-      } else if (error.code === -32602) {
+              } else if (error && typeof error === 'object' && 'code' in error && error.code === -32602) {
         // Network already exists, try switching
         try {
           await window.ethereum.request({
@@ -60,7 +60,8 @@ export function NetworkSwitcher() {
           alert('Failed to switch to Monad network. Please try manually.');
         }
       } else {
-        alert(`Failed to add Monad network: ${error.message}`);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        alert(`Failed to add Monad network: ${errorMessage}`);
       }
     } finally {
       setIsAdding(false);
@@ -78,13 +79,14 @@ export function NetworkSwitcher() {
         method: 'wallet_switchEthereumChain',
         params: [{ chainId: MONAD_TESTNET_PARAMS.chainId }],
       });
-    } catch (error: any) {
-      if (error.code === 4902) {
+    } catch (error) {
+      if (error && typeof error === 'object' && 'code' in error && error.code === 4902) {
         // Network not added yet, add it
         await addMonadNetwork();
       } else {
         console.error('Failed to switch network:', error);
-        alert(`Failed to switch network: ${error.message}`);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        alert(`Failed to switch network: ${errorMessage}`);
       }
     }
   };

@@ -39,6 +39,32 @@ const publicClient = createPublicClient({
   }),
 });
 
+interface TokenMetadata {
+  name: string;
+  description: string;
+  image: string;
+  animation_url: string;
+  external_url: string;
+  background_color: string;
+  attributes: Array<{
+    trait_type: string;
+    value: string | number;
+    max_value?: number;
+    display_type?: string;
+  }>;
+  properties: {
+    evolution_stage: number;
+    max_evolution_stage: number;
+    rarity_score: number;
+    is_quantum: boolean;
+    birth_timestamp: number;
+    neural_complexity: number;
+    contract_address: string;
+    chain_id: number;
+    network: string;
+  };
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ tokenId: string }> }
@@ -80,11 +106,12 @@ export async function GET(
       
       if (owner && owner !== '0x0000000000000000000000000000000000000000') {
         tokenExists = true;
-        tokenOwner = owner;
+        tokenOwner = owner as string;
         console.log(`✅ Token ${tokenId} exists, owner: ${owner}`);
       }
-    } catch (existsError: any) {
-      console.warn(`⚠️ Could not check token existence for ${tokenId}: ${existsError.message}`);
+    } catch (existsError) {
+      const errorMessage = existsError instanceof Error ? existsError.message : 'Unknown error';
+      console.warn(`⚠️ Could not check token existence for ${tokenId}: ${errorMessage}`);
     }
 
     // Try to get actual metadata from contract
@@ -103,10 +130,10 @@ export async function GET(
         
         try {
           // Parse the contract metadata and override URLs
-          const parsedMetadata = JSON.parse(contractMetadata);
+          const parsedMetadata = JSON.parse(contractMetadata) as TokenMetadata;
           
           // Override URLs to use correct base URL
-          const correctedMetadata = {
+          const correctedMetadata: TokenMetadata = {
             ...parsedMetadata,
             image: `${baseURL}/api/nft/${tokenId}/image`,
             animation_url: `${baseURL}/api/nft/${tokenId}/animation`,
@@ -125,12 +152,14 @@ export async function GET(
               'X-Source': 'contract',
             },
           });
-        } catch (parseError: any) {
-          console.error(`❌ Failed to parse contract metadata for token ${tokenId}:`, parseError);
+        } catch (parseError) {
+          const errorMessage = parseError instanceof Error ? parseError.message : 'Unknown error';
+          console.error(`❌ Failed to parse contract metadata for token ${tokenId}:`, errorMessage);
         }
       }
-    } catch (contractError: any) {
-      console.warn(`⚠️ Contract metadata fetch failed for token ${tokenId}:`, contractError.message);
+    } catch (contractError) {
+      const errorMessage = contractError instanceof Error ? contractError.message : 'Unknown error';
+      console.warn(`⚠️ Contract metadata fetch failed for token ${tokenId}:`, errorMessage);
     }
 
     // Generate enhanced fallback metadata
@@ -148,7 +177,7 @@ export async function GET(
     const rarityScore = 100 + (seed % 200); // 100-299 range
     const age = Math.floor((Date.now() - 1640995200000) / (1000 * 60 * 60 * 24)); // Days since Jan 1, 2022
     
-    const fallbackMetadata = {
+    const fallbackMetadata: TokenMetadata = {
       name: `MONARA #${tokenId}`,
       description: `🧠 Evolving Digital Being on Monad Network
 
@@ -257,14 +286,16 @@ ${tokenExists ? `**Owner:** ${tokenOwner}` : '**Status:** Initializing...'}`,
       },
     });
 
-  } catch (error: any) {
-    console.error(`💥 Metadata API Error for token ${(await params).tokenId}:`, error);
+  } catch (error) {
+    const resolvedParams = await params;
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error(`💥 Metadata API Error for token ${resolvedParams.tokenId}:`, errorMessage);
     
     return NextResponse.json(
       { 
         error: 'Failed to generate metadata',
-        details: error.message,
-        tokenId: (await params).tokenId
+        details: errorMessage,
+        tokenId: resolvedParams.tokenId
       },
       { 
         status: 500,

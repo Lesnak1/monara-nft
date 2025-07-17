@@ -1,11 +1,29 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
 const MONAD_RPC_URLS = [
   'https://testnet-rpc.monad.xyz',
 ];
 
+interface RPCResponse {
+  jsonrpc: string;
+  id: number;
+  result?: string | object;
+  error?: {
+    code: number;
+    message: string;
+  };
+}
+
+interface BlockData {
+  number: string;
+  timestamp: string;
+  transactions: unknown[];
+  gasUsed: string;
+  gasLimit: string;
+}
+
 // Enhanced RPC call with fallback support
-const makeRPCCall = async (method: string, params: any[] = [], id: number = 1): Promise<any> => {
+const makeRPCCall = async (method: string, params: unknown[] = [], id: number = 1): Promise<RPCResponse> => {
   const payload = {
     jsonrpc: '2.0',
     method,
@@ -39,7 +57,7 @@ const makeRPCCall = async (method: string, params: any[] = [], id: number = 1): 
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      const data = await response.json();
+      const data: RPCResponse = await response.json();
       
       if (data.error) {
         throw new Error(`RPC Error: ${data.error.message}`);
@@ -47,21 +65,25 @@ const makeRPCCall = async (method: string, params: any[] = [], id: number = 1): 
 
       console.log(`✅ RPC call successful via ${rpcUrl}`);
       return data;
-    } catch (err: any) {
-      console.warn(`❌ RPC call failed for ${rpcUrl}:`, err.message);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      console.warn(`❌ RPC call failed for ${rpcUrl}:`, errorMessage);
       
       // If this is the last RPC URL, throw the error
       if (i === MONAD_RPC_URLS.length - 1) {
-        throw new Error(`All RPC endpoints failed. Last error: ${err.message}`);
+        throw new Error(`All RPC endpoints failed. Last error: ${errorMessage}`);
       }
       
       // Wait a bit before trying next RPC
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
   }
+
+  // This should never be reached due to the loop above, but TypeScript needs it
+  throw new Error('Unexpected error in RPC call');
 };
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     console.log('🔍 Fetching Monad network stats...');
 
@@ -79,7 +101,7 @@ export async function GET(request: NextRequest) {
     // Parse block number
     if (responses[0].status === 'fulfilled') {
       const blockData = responses[0].value;
-      if (blockData.result) {
+      if (blockData.result && typeof blockData.result === 'string') {
         blockHeight = parseInt(blockData.result, 16);
         console.log('📊 Block height:', blockHeight);
       }
@@ -88,7 +110,7 @@ export async function GET(request: NextRequest) {
     // Parse gas price
     if (responses[1].status === 'fulfilled') {
       const gasPriceData = responses[1].value;
-      if (gasPriceData.result) {
+      if (gasPriceData.result && typeof gasPriceData.result === 'string') {
         gasPrice = Math.round(parseInt(gasPriceData.result, 16) / 1e9); // Convert to Gwei
         console.log('⛽ Gas price:', gasPrice, 'Gwei');
       }
@@ -97,9 +119,12 @@ export async function GET(request: NextRequest) {
     // Parse latest block
     if (responses[2].status === 'fulfilled') {
       const blockData = responses[2].value;
-      if (blockData.result && blockData.result.transactions) {
-        transactionCount = blockData.result.transactions.length;
-        console.log('📋 Transaction count in latest block:', transactionCount);
+      if (blockData.result && typeof blockData.result === 'object' && blockData.result !== null) {
+        const block = blockData.result as BlockData;
+        if (block.transactions) {
+          transactionCount = block.transactions.length;
+          console.log('📋 Transaction count in latest block:', transactionCount);
+        }
       }
     }
 
@@ -132,8 +157,9 @@ export async function GET(request: NextRequest) {
       },
     });
 
-  } catch (error: any) {
-    console.error('❌ Failed to fetch network stats:', error);
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('❌ Failed to fetch network stats:', errorMessage);
     
     // Return fallback data
     const fallbackStats = {

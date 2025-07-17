@@ -577,8 +577,9 @@ export function useMonanimalContract() {
           return balanceWei;
         }
       }
-    } catch (metamaskError: any) {
-      console.warn('⚠️ MetaMask balance fetch failed:', metamaskError.message);
+          } catch (metamaskError) {
+        const errorMessage = metamaskError instanceof Error ? metamaskError.message : 'Unknown error';
+        console.warn('⚠️ MetaMask balance fetch failed:', errorMessage);
     }
 
     // Method 2: Try a single reliable RPC with simpler approach
@@ -607,8 +608,9 @@ export function useMonanimalContract() {
           return balanceWei;
         }
       }
-    } catch (rpcError: any) {
-      console.warn('⚠️ Direct RPC balance fetch failed:', rpcError.message);
+          } catch (rpcError) {
+        const errorMessage = rpcError instanceof Error ? rpcError.message : 'Unknown error';
+        console.warn('⚠️ Direct RPC balance fetch failed:', errorMessage);
     }
 
     console.error('❌ All balance fetch methods failed');

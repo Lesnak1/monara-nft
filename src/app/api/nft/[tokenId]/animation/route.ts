@@ -76,7 +76,7 @@ export async function GET(
       }
 
       // Enhance SVG with animations
-      const animatedSVG = addAnimationsToSVG(svg, tokenId);
+      const animatedSVG = addAnimationsToSVG(svg);
 
       // Return animated SVG with proper headers for MetaMask
       return new NextResponse(animatedSVG, {
@@ -90,8 +90,9 @@ export async function GET(
         },
       });
 
-    } catch (contractError: any) {
-      console.error('Contract read error:', contractError);
+    } catch (contractError) {
+      const errorMessage = contractError instanceof Error ? contractError.message : 'Unknown error';
+      console.error('Contract read error:', errorMessage);
       
       // Fallback: Generate an animated placeholder SVG
       const animatedPlaceholderSVG = generateAnimatedPlaceholderSVG(tokenId);
@@ -106,8 +107,9 @@ export async function GET(
       });
     }
 
-  } catch (error: any) {
-    console.error('API Error:', error);
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('API Error:', errorMessage);
     
     // Return a minimal error SVG
     const { tokenId: errorTokenId } = await params;
@@ -124,7 +126,7 @@ export async function GET(
 }
 
 // Add animations to existing SVG
-function addAnimationsToSVG(svg: string, tokenId: string): string {
+function addAnimationsToSVG(svg: string): string {
   // Basic animation enhancement
   const animations = `
     <defs>

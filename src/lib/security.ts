@@ -169,7 +169,7 @@ class SecurityUtils {
   /**
    * Sanitize contract interaction data
    */
-  sanitizeContractData(data: any): any {
+  sanitizeContractData(data: unknown): unknown {
     if (typeof data === 'string') {
       return this.sanitizeHtml(data);
     }
@@ -179,7 +179,7 @@ class SecurityUtils {
     }
 
     if (typeof data === 'object' && data !== null) {
-      const sanitized: any = {};
+      const sanitized: Record<string, unknown> = {};
       for (const [key, value] of Object.entries(data)) {
         // Sanitize key
         const cleanKey = key.replace(/[^\w\-_]/g, '');
